@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <math.h>
-#include <time.h>
 #include <converse.h>
 #include "ping.cpm.h"
 
@@ -8,17 +6,12 @@ CpvDeclare(int, ping_index);
 CpvDeclare(int, ackmsg_index);
 CpvDeclare(int, msg_size);
 CpvDeclare(int, ack_count);
-CpvDeclare(double, total_time);
-CpvDeclare(double, process_time);
-CpvDeclare(double, send_time);
 
 typedef struct myMsg
 {
   char header[CmiMsgHeaderSizeBytes];
   int payload[1];
 } *message;
-
-
 
 void print_results() {
   CmiPrintf("msg_size\n%d\n", CpvAccess(msg_size));
@@ -29,10 +22,7 @@ CpmInvokable ping_stop()
   CsdExitScheduler();
 }
 
-
-
 void send_msg() {
-  double start_time, crt_time;
   struct myMsg *msg;
   msg = (message)CmiAlloc(CpvAccess(msg_size));
   // Fills payload with ints
@@ -50,7 +40,7 @@ void send_msg() {
 
 void ping_handler(void *vmsg)
 {
-  int i, next;
+  int i;
   message msg = (message)vmsg;
   // if this is a receiving PE
   if (CmiMyPe() >= CmiNumPes() / 2) {
@@ -99,7 +89,6 @@ void pe0_ack_handler(void *vmsg)
   }
 }
 
-
 void ping_init()
 {
   int totalpes = CmiNumPes(); //p=num_pes
@@ -114,8 +103,6 @@ void ping_init()
       send_msg();
   }
 }
-
-
 
 void ping_moduleinit(int argc, char **argv)
 {
