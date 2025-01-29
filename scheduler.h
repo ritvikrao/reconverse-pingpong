@@ -30,3 +30,6 @@ int CmiMyNode();
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);
 void CmiSyncSendAndFree(int destNode, int destPE, int messageSize, void *msg);
+
+//scheduler function
+void CsdScheduler();

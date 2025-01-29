@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <pthread.h>
 
-void* mymain(void* argv)
+CmiStartFn mymain(int argc, char** argv)
 {
-  printf("Calling main\n");
+  printf("Calling main, argc=%d\n", argc);
   return 0;
 }
 

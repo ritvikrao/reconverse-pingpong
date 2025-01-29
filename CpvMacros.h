@@ -1,4 +1,6 @@
-typedef void* (*CmiStartFn)(void *argv);
+#include "reconverse.h"
+
+int Cmi_argc;
 static char     **Cmi_argv;
 static CmiStartFn Cmi_startfn;
 int Cmi_npes;

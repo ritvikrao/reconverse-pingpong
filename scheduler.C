@@ -42,3 +42,7 @@ void CmiSyncSendAndFree(int destNode, int destPE, int messageSize, void *msg)
         // TODO: handle off node message send
     }
 }
+
+void CsdScheduler(){
+    
+}
