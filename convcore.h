@@ -9,7 +9,7 @@ static CmiStartFn Cmi_startfn;
 int Cmi_npes;
 int Cmi_argc;
 
-static void CmiStartThreads(char **argv);
+void CmiStartThreads(char **argv);
 
 void *converseRunPe(void *arg);
 

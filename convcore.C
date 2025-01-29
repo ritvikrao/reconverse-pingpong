@@ -14,7 +14,7 @@ void *converseRunPe(void *args)
     return NULL;
 }
 
-static void CmiStartThreads()
+void CmiStartThreads()
 {
     pthread_t threadId[Cmi_npes];
     for (int i = 0; i < Cmi_npes; i++)
