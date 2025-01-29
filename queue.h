@@ -3,23 +3,14 @@
 
 #include <queue>
 #include <mutex>
+
 class MutexAccessControl
 {
 public:
     static std::mutex mutex;
-
-    static void acquire()
-    {
-        mutex.lock();
-    }
-
-    static void release()
-    {
-        mutex.unlock();
-    }
+    static void acquire();
+    static void release();
 };
-
-std::mutex MutexAccessControl::mutex;
 
 // An MPSC queue that can be used to send messages between threads.
 template <typename ConcreteQ, typename MessageType, typename AccessControlPolicy>
