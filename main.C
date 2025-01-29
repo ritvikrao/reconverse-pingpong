@@ -1,6 +1,8 @@
 //+pe <N> threads, each running a scheduler
-#include "reconverse.h"
+#include "CpvMacros.h"
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void CmiStartThreads(char **argv){
 	pthread_t threadId[Cmi_npes];
@@ -10,14 +12,14 @@ static void CmiStartThreads(char **argv){
     }
 	for(int i=0; i<Cmi_npes; i++)
 	{
-		pthread_join(&threadId[i], NULL);
+		pthread_join(threadId[i], NULL);
 	}
 }
 
 //argument form: ./prog +pe <N>
 void ConverseInit(int argc, char **argv, CmiStartFn fn){
 
-    Cmi_npes = *argv[2];
+    Cmi_npes = atoi(argv[2]);
     //int plusPSet = CmiGetArgInt(argv,"+pe",&Cmi_npes);
 
     // NOTE: calling CmiNumPes() here it sometimes returns zero

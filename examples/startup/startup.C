@@ -1,12 +1,15 @@
 #include "reconverse.h"
+#include <stdio.h>
+#include <pthread.h>
 
-CmiStartFn mymain(char *argv[])
+void* mymain(void* argv)
 {
-
+  printf("Calling main\n");
+  return 0;
 }
 
-int main(int argc,char *argv[])
+int main(int argc,char **argv)
 {
-  ConverseInit(argc,argv,(CmiStartFn)mymain,0,0);
+  ConverseInit(argc,argv,(CmiStartFn)mymain);
   return 0;
 }
