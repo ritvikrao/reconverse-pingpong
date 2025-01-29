@@ -5,10 +5,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int Cmi_npes;
+int Cmi_argc;
+
 void *converseRunPe(void *args)
 {
     // call cmi start function, pass args to it
     Cmi_startfn(Cmi_argc, Cmi_argv);
+
+    // init state struct
+    CmiInitState();
+
     // call scheduler
     CsdScheduler();
     return NULL;
@@ -55,13 +62,23 @@ CmiGetState(void)
     return state;
 };
 
+CmiState
+CmiGetState(int pe)
+{
+    // TODO get state of pe
+    CmiState state;
+    return state;
+}
+
 void CmiInitState()
 {
     CmiState state = CmiGetState();
     state.pe = 0; // TOOD: get pe from thread info
     state.rank = 0;
 
-    // TODO: store state in some global array indexed by thread id
+    state.queue = ConverseQueue<CmiMessage>();
+
+    // TODO: store state in some global array
 }
 
 int CmiMyPE()
@@ -76,7 +93,7 @@ int CmiMyNode()
 
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
-    // TODO: add message to node-level queue
+    // TODO: add message to PE-level queue
 }
 
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)

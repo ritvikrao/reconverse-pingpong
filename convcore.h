@@ -2,12 +2,11 @@
 #define CONVCORE_H
 
 #include "converse.h"
+#include "queue.h"
 
 static char **Cmi_argv;
 
 static CmiStartFn Cmi_startfn;
-int Cmi_npes;
-int Cmi_argc;
 
 void CmiStartThreads(char **argv);
 
@@ -24,7 +23,7 @@ typedef struct Header
 
 #define CmiMessageHeaderSize sizeof(CmiMessageHeader)
 
-typedef struct Message
+typedef struct CmiMessageStruct
 {
     CmiMessageHeader header;
     char data[];
@@ -34,10 +33,13 @@ typedef struct State
 {
     int pe;
     int rank;
+    ConverseQueue<CmiMessage> queue;
+
 } CmiState;
 
 // state relevant functionality
 CmiState CmiGetState(void);
+CmiState CmiGetState(int pe);
 void CmiInitState();
 
 // state getters
