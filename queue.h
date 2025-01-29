@@ -36,6 +36,19 @@ public:
         q.push(message);
         AccessControlPolicy::release();
     }
+
+    bool empty()
+    {
+        return this->size() == 0;
+    }
+
+    size_t size()
+    {
+        AccessControlPolicy::acquire();
+        size_t result = q.size();
+        AccessControlPolicy::release();
+        return result;
+    }
 };
 
 template <typename MessageType>
