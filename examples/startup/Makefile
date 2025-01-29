@@ -1,6 +1,6 @@
 
 
-startup: startup.C ../../main.C
-	gcc ../../main.C startup.C -o startup -lpthread -I ../..
+startup: startup.C
+	gcc startup.C -o startup -I../.. -L../.. -lreconverse -Wl,-rpath,../..
 
 clean: rm -rf startup
