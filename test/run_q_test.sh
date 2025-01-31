@@ -1,5 +1,5 @@
 #!/bin/bash
 
-g++ -pthread queue.C -o qtest
+g++ queue.C ../queue.C -o qtest -std=c++11 -pthread -I ../
 ./qtest
 
