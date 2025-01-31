@@ -4,6 +4,7 @@
 
 CpvDeclare(int, ping_index);
 CpvDeclare(int, ackmsg_index);
+CpvDeclare(int, stop_index);
 CpvDeclare(int, msg_size);
 CpvDeclare(int, ack_count);
 
@@ -17,8 +18,10 @@ void print_results() {
   CmiPrintf("msg_size\n%d\n", CpvAccess(msg_size));
 }
 
-CpmInvokable ping_stop()
+//CpmInvokable ping_stop()
+void ping_stop_handler(void *msg)
 {
+  CmiFree(msg);
   CsdExitScheduler();
 }
 
@@ -37,6 +40,13 @@ void send_msg() {
   CmiSyncSendAndFree(CmiNumPes() / 2 + CmiMyPe(), CpvAccess(msg_size), msg);
 }
 
+void call_exit(){
+  for(int i=0;i<CmiNumPes();i++) {
+    message msg = (message)CmiAlloc(CmiMsgHeaderSizeBytes);
+    CmiSetHandler(msg, CpvAccess(stop_index));
+    CmiSyncSendAndFree(i, CmiMsgHeaderSizeBytes, msg);
+  }
+}
 
 void ping_handler(void *vmsg)
 {
@@ -57,7 +67,8 @@ void ping_handler(void *vmsg)
     double calced_avg = sum / num_ints;
     if (calced_avg != exp_avg) {
       CmiPrintf("Calculated average of %f does not match expected value of %f, exiting\n", calced_avg, exp_avg);
-      Cpm_ping_stop(CpmSend(CpmALL)); 
+      call_exit();
+//      Cpm_ping_stop(CpmSend(CpmALL)); 
     } 
     // else
     //   CmiPrintf("Calculation OK\n"); // DEBUG: Computation Check
@@ -84,8 +95,8 @@ void pe0_ack_handler(void *vmsg)
 
     // print results
     print_results();
-
-    Cpm_ping_stop(CpmSend(CpmALL));
+    call_exit();
+//    Cpm_ping_stop(CpmSend(CpmALL));
   }
 }
 
@@ -97,7 +108,8 @@ void ping_init()
     CmiPrintf("note: this test requires at multiple of 2 pes, skipping test.\n");
     CmiPrintf("exiting.\n");
     CsdExitScheduler();
-    Cpm_ping_stop(CpmSend(CpmALL));
+    call_exit();
+//    Cpm_ping_stop(CpmSend(CpmALL));
   } else {
     if(CmiMyPe() < pes_per_node)
       send_msg();
@@ -108,24 +120,26 @@ void ping_moduleinit(int argc, char **argv)
 {
   CpvInitialize(int, ping_index);
   CpvInitialize(int, ackmsg_index);
+  CpvInitialize(int, stop_index);
   CpvInitialize(int, msg_size);
   CpvInitialize(int, ack_count);
 
   CpvAccess(ping_index) = CmiRegisterHandler(ping_handler);
   CpvAccess(ackmsg_index) = CmiRegisterHandler(pe0_ack_handler);
+  CpvAccess(stop_index) = CmiRegisterHandler(ping_stop_handler);
   CpvAccess(msg_size) = 16+CmiMsgHeaderSizeBytes+100;
-  void CpmModuleInit(void);
-  void CfutureModuleInit(void);
+//  void CpmModuleInit(void);
+//  void CfutureModuleInit(void);
   void CpthreadModuleInit(void);
 
-  CpmModuleInit();
-  CfutureModuleInit();
+//  CpmModuleInit();
+//  CfutureModuleInit();
   CpthreadModuleInit();
   CpmInitializeThisModule();
   // Set runtime cpuaffinity
-  CmiInitCPUAffinity(argv);
+//  CmiInitCPUAffinity(argv);
   // Initialize CPU topology
-  CmiInitCPUTopology(argv);
+//  CmiInitCPUTopology(argv);
   // Wait for all PEs of the node to complete topology init
         CmiNodeAllBarrier();
 
