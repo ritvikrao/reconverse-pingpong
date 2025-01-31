@@ -10,7 +10,7 @@ pingack: $(OBJS)
 	$(CHARMC) -o pingack $(OBJS) -language converse++
 
 ping.o: ping.c
-	$(CHARMC) -gen-cpm ping.c -g
+	$(CHARMC) ping.c -g
 	$(CHARMC) ping.c
 
 clean:
