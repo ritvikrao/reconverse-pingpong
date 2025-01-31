@@ -1,12 +1,25 @@
 //+pe <N> threads, each running a scheduler
 #include "convcore.h"
 #include "scheduler.h"
+#include "CpvMacros.h"
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <barrier>
 
 int Cmi_npes;
 int Cmi_argc;
+int _Cmi_myrank; /* Normally zero; only 1 during SIGIO handling */
+int _Cmi_mynode;
+int _Cmi_numnodes;
+
+// define variables (do we use cpv or cth here?)
+CpvDeclare(CmiHandlerInfo *, CmiHandlerTable);
+CpvStaticDeclare(int, CmiHandlerCount);
+CpvStaticDeclare(int, CmiHandlerLocal);
+CpvStaticDeclare(int, CmiHandlerGlobal);
+CpvDeclare(int, CmiHandlerMax);
 
 void *converseRunPe(void *args)
 {
@@ -15,6 +28,9 @@ void *converseRunPe(void *args)
 
     // init state struct
     CmiInitState();
+
+    // declare handler structs
+    CpvDeclare(CmiHandlerInfo *, CmiHandlerTable);
 
     // call scheduler
     CsdScheduler();
@@ -91,6 +107,11 @@ int CmiMyNode()
     return CmiGetState().rank;
 }
 
+int CmiMyNodeSize()
+{
+    return 1; // TODO: get node size
+}
+
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
     // TODO: add message to PE-level queue
@@ -107,4 +128,52 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
     {
         // TODO: handle off node message send
     }
+}
+
+// HANDLER TOOLS
+static void CmiExtendHandlerTable(int atLeastLen)
+{
+    int max = CpvAccess(CmiHandlerMax);
+    int newmax = (atLeastLen + (atLeastLen >> 2) + 32);
+    int bytes = max * sizeof(CmiHandlerInfo);
+    int newbytes = newmax * sizeof(CmiHandlerInfo);
+    CmiHandlerInfo *nu = (CmiHandlerInfo *)malloc(newbytes);
+    CmiHandlerInfo *tab = CpvAccess(CmiHandlerTable);
+    // _MEMCHECK(nu);
+    if (tab)
+    {
+        memcpy(nu, tab, bytes);
+    }
+    memset(((char *)nu) + bytes, 0, (newbytes - bytes));
+    free(tab);
+    tab = nu;
+    CpvAccess(CmiHandlerTable) = tab;
+    CpvAccess(CmiHandlerMax) = newmax;
+}
+void CmiNumberHandler(int n, CmiHandler h)
+{
+    CmiHandlerInfo *tab;
+    if (n >= CpvAccess(CmiHandlerMax))
+        CmiExtendHandlerTable(n);
+    tab = CpvAccess(CmiHandlerTable);
+    tab[n].hdlr = (CmiHandlerEx)h; /* LIE!  This assumes extra pointer will be ignored!*/
+    tab[n].userPtr = 0;
+}
+
+#define DIST_BETWEEN_HANDLERS 1
+int CmiRegisterHandler(CmiHandler h)
+{
+    int Count = CpvAccess(CmiHandlerCount);
+    CmiNumberHandler(Count, h);
+    CpvAccess(CmiHandlerCount) = Count + DIST_BETWEEN_HANDLERS;
+    return Count;
+}
+
+// NODE BARRIER
+void CmiNodeBarrier(void)
+{
+    // static Barrier nodeBarrier(CmiMyNodeSize());
+    // nodeBarrier.arrive_and_wait();
+
+    // TODO: implement barrier
 }

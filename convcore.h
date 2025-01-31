@@ -4,15 +4,13 @@
 #include "converse.h"
 #include "queue.h"
 
-static char **Cmi_argv;
+#include "CpvMacros.h"
+
+typedef void (*CmiStartFn)(int argc, char **argv);
+void ConverseInit(int argc, char **argv, CmiStartFn fn);
 
 static CmiStartFn Cmi_startfn;
 
-void CmiStartThreads(char **argv);
-
-void *converseRunPe(void *arg);
-
-/*Cmi Functions*/
 typedef struct Header
 {
     int handlerId;
@@ -21,13 +19,29 @@ typedef struct Header
     int destPE;
 } CmiMessageHeader;
 
-#define CmiMessageHeaderSize sizeof(CmiMessageHeader)
-
 typedef struct CmiMessageStruct
 {
     CmiMessageHeader header;
     char data[];
 } CmiMessage;
+
+// handler tools
+typedef void (*CmiHandler)(void *msg);
+typedef void (*CmiHandlerEx)(void *msg, void *userPtr);
+
+typedef struct HandlerInfo
+{
+    CmiHandlerEx hdlr;
+    void *userPtr;
+} CmiHandlerInfo;
+
+static char **Cmi_argv;
+
+void CmiStartThreads(char **argv);
+
+void *converseRunPe(void *arg);
+
+/*Cmi Functions*/
 
 typedef struct State
 {
@@ -45,9 +59,10 @@ void CmiInitState();
 // state getters
 int CmiMyPE();
 int CmiMyNode();
-
+int CmiMyNodeSize();
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg);
 
+void CmiNodeBarrier(void);
 #endif

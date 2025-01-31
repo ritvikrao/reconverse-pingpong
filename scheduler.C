@@ -20,6 +20,10 @@ void CsdScheduler()
         CmiMessage message = queue.pop();
 
         // TODO: process event
+        CmiMessageHeader header = message.header;
+        int handler = header.handlerId;
+
+        // CpvAccess(CmiHandlerTable)[handler].hdlr(message);
     }
 }
 
