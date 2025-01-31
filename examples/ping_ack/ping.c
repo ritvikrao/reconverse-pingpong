@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <converse.h>
-#include "ping.cpm.h"
+//#include "ping.cpm.h"
 
 CpvDeclare(int, ping_index);
 CpvDeclare(int, ackmsg_index);
@@ -15,7 +15,7 @@ typedef struct myMsg
 } *message;
 
 void print_results() {
-  CmiPrintf("msg_size\n%d\n", CpvAccess(msg_size));
+  printf("msg_size\n%d\n", CpvAccess(msg_size));
 }
 
 //CpmInvokable ping_stop()
@@ -135,7 +135,7 @@ void ping_moduleinit(int argc, char **argv)
 //  CpmModuleInit();
 //  CfutureModuleInit();
   CpthreadModuleInit();
-  CpmInitializeThisModule();
+//  CpmInitializeThisModule();
   // Set runtime cpuaffinity
 //  CmiInitCPUAffinity(argv);
   // Initialize CPU topology
