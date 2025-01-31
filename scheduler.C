@@ -9,9 +9,18 @@ void CsdScheduler()
 
     while (true)
     {
+        if (queue.empty())
+        {
+            // wait for new event
+            // TODO: do we just spin? or is there a better way?
+            continue;
+        }
+
         // get next event
-        // TODO: where is the check for empty queue?
         CmiMessage message = queue.pop();
-        // process event
+
+        // TODO: process event
     }
 }
+
+// TODO: implement CsdEnqueue: how does a PE get another PEs state/queue?
