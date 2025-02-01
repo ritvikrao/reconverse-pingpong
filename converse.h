@@ -1,4 +1,4 @@
-#include "CpvMacros.h"
+#include "CpvMacros.h" // for backward compatibility
 
 typedef void (*CmiStartFn)(int argc, char **argv);
 void ConverseInit(int argc, char **argv, CmiStartFn fn);

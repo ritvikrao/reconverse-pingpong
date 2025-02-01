@@ -21,7 +21,6 @@ class MPSCQueue
 public:
     MessageType pop()
     {
-        printf("Popping message from queue\n");
         AccessControlPolicy::acquire();
         // This will not work for atomics.
         // It's fine for now: internal implementation detail.
@@ -40,7 +39,6 @@ public:
 
     void push(MessageType message)
     {
-        printf("Pushing message into queue\n");
         AccessControlPolicy::acquire();
         q.push(message);
         AccessControlPolicy::release();

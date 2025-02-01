@@ -3,6 +3,9 @@
 
 #include "convcore.h"
 
+// NOTE: these are solely for backwards compatibility
+// Do not use in reconverse impl
+
 #define CMK_TAG(x, y) x##y##_
 
 #define CpvDeclare(t, v) t *CMK_TAG(Cpv_, v)

@@ -6,29 +6,25 @@
 void CsdScheduler()
 {
     // get pthread level queue
-    printf("DEBUG!! Starting scheduler\n");
-
-    ConverseQueue<CmiMessage> queue = CmiGetState()->queue;
+    ConverseQueue<CmiMessage> *queue = CmiGetState()->queue;
 
     while (true)
     {
-
-        if (!queue.empty())
+        if (!queue->empty())
         {
+            // get next event (guaranteed to be there because only single consumer)
+            CmiMessage message = queue->pop();
 
-            printf("Processing event\n");
-            // get next event
-            CmiMessage message = queue.pop();
-
-            // TODO: process event
+            // process event
             CmiMessageHeader header = message.header;
             int handler = header.handlerId;
 
+            // call handler
             CmiCallHandler(handler, message.data);
-
-            // CpvAccess(CmiHandlerTable)[handler].hdlr(message);
         }
+
+        // TODO: suspend? or spin?
     }
 }
 
-// TODO: implement CsdEnqueue: how does a PE get another PEs state/queue?
+// TODO: implement CsdEnqueue/Dequeue (why are these necessary?)

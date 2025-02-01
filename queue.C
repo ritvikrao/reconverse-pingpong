@@ -1,4 +1,5 @@
 #include "queue.h"
+
 // Add MutexAccessControl implementation
 std::mutex MutexAccessControl::mutex;
 
@@ -11,4 +12,3 @@ void MutexAccessControl::release()
 {
     mutex.unlock();
 }
-

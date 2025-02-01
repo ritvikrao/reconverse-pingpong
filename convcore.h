@@ -4,8 +4,6 @@
 #include "converse.h"
 #include "queue.h"
 
-#include "CpvMacros.h"
-
 typedef void (*CmiStartFn)(int argc, char **argv);
 void ConverseInit(int argc, char **argv, CmiStartFn fn);
 
@@ -29,7 +27,7 @@ typedef struct CmiMessageStruct
 // TODO: what is CmiHandlerEx in old converse?
 
 typedef void (*CmiHandler)(void *msg);
-typedef void (*CmiHandlerEx)(void *msg, void *userPtr);
+typedef void (*CmiHandlerEx)(void *msg, void *userPtr); // ignore for now
 
 void CmiCallHandler(int handlerId, void *msg);
 
@@ -49,7 +47,7 @@ typedef struct State
 {
     int pe;
     int node;
-    ConverseQueue<CmiMessage> queue;
+    ConverseQueue<CmiMessage> *queue;
 
 } CmiState;
 

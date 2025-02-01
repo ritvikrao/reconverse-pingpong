@@ -1,7 +1,6 @@
 //+pe <N> threads, each running a scheduler
 #include "convcore.h"
 #include "scheduler.h"
-#include "CpvMacros.h"
 #include "barrier.h"
 
 #include <pthread.h>
@@ -20,26 +19,28 @@ CmiState **Cmi_states; // array of state pointers
 // PE LOCALS
 thread_local int CmiHandlerCount = 0;
 thread_local int CmiHandlerMax = 10;
+
+// TODO: this should be shared global var
 thread_local std::vector<CmiHandlerInfo> CmiHandlerTable;
+// TODO: change to cmi_myrank
 thread_local int Cmi_pe; // store my state alone
 
 // TODO: padding for all these thread_locals and cmistates?
 
 void CmiCallHandler(int handler, void *msg)
 {
-    printf("Calling handler\n");
     CmiHandlerTable[handler].hdlr(msg);
 }
 
 void *converseRunPe(void *args)
 {
-    printf("Running PE\n");
     // init state
     int pe = *(int *)args;
     CmiInitState(pe);
 
     // call initial function and start scheduler
     Cmi_startfn(Cmi_argc, Cmi_argv);
+
     CsdScheduler();
 
     return NULL;
@@ -68,6 +69,7 @@ void CmiStartThreads()
 }
 
 // argument form: ./prog +pe <N>
+// TODO: this function need error checking
 void ConverseInit(int argc, char **argv, CmiStartFn fn)
 {
 
@@ -89,7 +91,6 @@ void ConverseInit(int argc, char **argv, CmiStartFn fn)
 }
 
 // CMI STATE
-
 CmiState *
 CmiGetState(void)
 {
@@ -104,13 +105,11 @@ CmiGetState(int pe)
 
 void CmiInitState(int pe)
 {
-
     CmiState *Cmi_state = new CmiState;
     Cmi_state->pe = pe;  // TODO: for now, pe is just thread index
     Cmi_state->node = 0; // TODO: get node
 
-    ConverseQueue<CmiMessage> queue;
-    Cmi_state->queue = queue;
+    Cmi_state->queue = new ConverseQueue<CmiMessage>();
 
     Cmi_states[pe] = Cmi_state;
     Cmi_pe = pe;
@@ -133,7 +132,8 @@ int CmiMyNodeSize()
 
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
-    CmiGetState(destPE)->queue.push(*(CmiMessage *)msg);
+    ConverseQueue<CmiMessage> *queue = CmiGetState(destPE)->queue;
+    queue->push(*(CmiMessage *)msg);
 }
 
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
@@ -149,46 +149,11 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
     }
 }
 
-// // HANDLER TOOLS
-// static void CmiExtendHandlerTable(int atLeastLen)
-// {
-//     int max = CmiHandlerMax;
-//     int newmax = (atLeastLen + (atLeastLen >> 2) + 32);
-//     int bytes = max * sizeof(CmiHandlerInfo);
-//     int newbytes = newmax * sizeof(CmiHandlerInfo);
-//     CmiHandlerInfo *nu = (CmiHandlerInfo *)malloc(newbytes);
-//     CmiHandlerInfo *tab = CmiHandlerTable;
-//     // _MEMCHECK(nu);
-//     if (tab)
-//     {
-//         memcpy(nu, tab, bytes);
-//     }
-//     memset(((char *)nu) + bytes, 0, (newbytes - bytes));
-//     free(tab);
-//     tab = nu;
-//     CmiHandlerTable = tab;
-//     CmiHandlerMax = newmax;
-// }
-
-// void CmiNumberHandler(int n, CmiHandler h)
-// {
-
-//     CmiHandlerInfo *tab;
-//     if (n >= CmiHandlerMax)
-//         CmiExtendHandlerTable(n);
-//     tab = CmiHandlerTable;
-//     tab[n].hdlr = (CmiHandler)h; /* LIE!  This assumes extra pointer will be ignored!*/
-//     tab[n].userPtr = 0;
-
-//     CmiHandlerTable = tab;
-// }
-
+// HANDLER TOOLS
 #define DIST_BETWEEN_HANDLERS 1
 int CmiRegisterHandler(CmiHandler h)
 {
-
     // add handler to vector
-
     CmiHandlerTable.push_back({h, nullptr});
     return CmiHandlerTable.size() - 1;
 }
