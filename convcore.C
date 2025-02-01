@@ -6,13 +6,10 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <barrier>
 
-int Cmi_npes;
 int Cmi_argc;
-int _Cmi_myrank; /* Normally zero; only 1 during SIGIO handling */
-int _Cmi_mynode;
-int _Cmi_numnodes;
+static char **Cmi_argv;
+int Cmi_npes;
 
 // define variables (do we use cpv or cth here?)
 CpvDeclare(CmiHandlerInfo *, CmiHandlerTable);
@@ -21,28 +18,36 @@ CpvStaticDeclare(int, CmiHandlerLocal);
 CpvStaticDeclare(int, CmiHandlerGlobal);
 CpvDeclare(int, CmiHandlerMax);
 
+thread_local CmiState *Cmi_state;
+
 void *converseRunPe(void *args)
 {
-    // call cmi start function, pass args to it
-    Cmi_startfn(Cmi_argc, Cmi_argv);
-
-    // init state struct
-    CmiInitState();
+    // init state
+    int pe = *(int *)args;
+    CmiInitState(pe);
 
     // declare handler structs
     CpvDeclare(CmiHandlerInfo *, CmiHandlerTable);
 
-    // call scheduler
+    // call initial function and start scheduler
+    Cmi_startfn(Cmi_argc, Cmi_argv);
     CsdScheduler();
+
     return NULL;
 }
 
 void CmiStartThreads()
 {
     pthread_t threadId[Cmi_npes];
+
+    // TODO: how to get enumerated pe nums for each thread?
+    // this would be much cleaner with std::threads
+    int threadPeNums[Cmi_npes];
+
     for (int i = 0; i < Cmi_npes; i++)
     {
-        pthread_create(&threadId[i], NULL, converseRunPe, NULL);
+        threadPeNums[i] = i;
+        pthread_create(&threadId[i], NULL, converseRunPe, &threadPeNums[i]);
     }
     for (int i = 0; i < Cmi_npes; i++)
     {
@@ -71,45 +76,38 @@ void ConverseInit(int argc, char **argv, CmiStartFn fn)
     free(Cmi_argv);
 }
 
-CmiState
+// CMI STATE
+static pthread_key_t Cmi_state_key = (pthread_key_t)(-1);
+
+CmiState *
 CmiGetState(void)
 {
-    CmiState state; // TODO: get current pe state
-    return state;
+    return Cmi_state;
 };
 
-CmiState
-CmiGetState(int pe)
+void CmiInitState(int pe)
 {
-    // TODO get state of pe
-    CmiState state;
-    return state;
-}
+    Cmi_state = new CmiState;
+    Cmi_state->pe = pe;  // TODO: for now, pe is just thread index
+    Cmi_state->node = 0; // TODO: get node
 
-void CmiInitState()
-{
-    CmiState state = CmiGetState();
-    state.pe = 0; // TOOD: get pe from thread info
-    state.rank = 0;
-
-    state.queue = ConverseQueue<CmiMessage>();
-
-    // TODO: store state in some global array
+    ConverseQueue<CmiMessage> queue;
+    Cmi_state->queue = queue;
 }
 
 int CmiMyPE()
 {
-    return CmiGetState().pe;
+    return CmiGetState()->pe;
 }
 
 int CmiMyNode()
 {
-    return CmiGetState().rank;
+    return CmiGetState()->node;
 }
 
 int CmiMyNodeSize()
 {
-    return 1; // TODO: get node size
+    return Cmi_npes; // TODO: get node size
 }
 
 void CmiPushPE(int destPE, int messageSize, void *msg)

@@ -35,8 +35,6 @@ typedef struct HandlerInfo
     void *userPtr;
 } CmiHandlerInfo;
 
-static char **Cmi_argv;
-
 void CmiStartThreads(char **argv);
 
 void *converseRunPe(void *arg);
@@ -46,15 +44,14 @@ void *converseRunPe(void *arg);
 typedef struct State
 {
     int pe;
-    int rank;
+    int node;
     ConverseQueue<CmiMessage> queue;
 
 } CmiState;
 
 // state relevant functionality
-CmiState CmiGetState(void);
-CmiState CmiGetState(int pe);
-void CmiInitState();
+CmiState *CmiGetState(void);
+void CmiInitState(int pe);
 
 // state getters
 int CmiMyPE();

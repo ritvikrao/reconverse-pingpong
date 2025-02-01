@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-CpvDeclare(int, test_mype);
+CpvDeclare(int, test);
 
 void ping_handler(void *vmsg)
 {
@@ -11,11 +11,11 @@ void ping_handler(void *vmsg)
 
 CmiStartFn mymain(int argc, char **argv)
 {
-  printf("Calling main, argc=%d\n", argc);
-  CpvInitialize(int, test_mype);
-  CpvAccess(test_mype) = CmiMyPE();
+  CpvInitialize(int, test);
+  CpvAccess(test) = 42;
 
-  printf("My PE is %d\n", CpvAccess(test_mype));
+  printf("My PE is %d\n", CmiMyPE());
+  printf("Answer to the Ultimate Question of Life, the Universe, and Everything: %d\n", CpvAccess(test));
   return 0;
 }
 

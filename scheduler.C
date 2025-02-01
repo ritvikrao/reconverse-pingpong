@@ -5,7 +5,8 @@
 void CsdScheduler()
 {
     // get pthread level queue
-    ConverseQueue<CmiMessage> queue = CmiGetState().queue;
+
+    ConverseQueue<CmiMessage> queue = CmiGetState()->queue;
 
     while (true)
     {
