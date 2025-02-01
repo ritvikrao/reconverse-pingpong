@@ -25,13 +25,17 @@ typedef struct CmiMessageStruct
     char data[];
 } CmiMessage;
 
-// handler tools
+// handler functionality
+// TODO: what is CmiHandlerEx in old converse?
+
 typedef void (*CmiHandler)(void *msg);
 typedef void (*CmiHandlerEx)(void *msg, void *userPtr);
 
+void CmiCallHandler(int handlerId, void *msg);
+
 typedef struct HandlerInfo
 {
-    CmiHandlerEx hdlr;
+    CmiHandler hdlr;
     void *userPtr;
 } CmiHandlerInfo;
 
@@ -57,9 +61,11 @@ void CmiInitState(int pe);
 int CmiMyPE();
 int CmiMyNode();
 int CmiMyNodeSize();
+
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg);
 
 void CmiNodeBarrier(void);
+
 #endif
