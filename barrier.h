@@ -3,6 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 
+// TODO: this is not reusable - on trying to reuse barrier it hangs
 class Barrier
 {
 private:
@@ -20,9 +21,10 @@ public:
         count++;
 
         if (count == thread_count)
-        {              // Last thread to arrive
+        {
             count = 0; // Reset barrier for potential reuse
             cv.notify_all();
+            lock.unlock();
         }
         else
         {

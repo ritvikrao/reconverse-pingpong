@@ -10,3 +10,9 @@ typedef void (*CmiHandler)(void *msg);
 typedef void (*CmiHandlerEx)(void *msg, void *userPtr);
 
 int CmiRegisterHandler(CmiHandler h);
+
+// state getters
+int CmiMyPE();
+int CmiMyNode();
+int CmiMyNodeSize();
+int CmiMyRank();

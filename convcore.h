@@ -23,7 +23,10 @@ typedef struct CmiMessageStruct
     char data[];
 } CmiMessage;
 
-// handler functionality
+void CmiStartThreads(char **argv);
+void *converseRunPe(void *arg);
+
+// HANDLERS
 // TODO: what is CmiHandlerEx in old converse?
 
 typedef void (*CmiHandler)(void *msg);
@@ -37,15 +40,13 @@ typedef struct HandlerInfo
     void *userPtr;
 } CmiHandlerInfo;
 
-void CmiStartThreads(char **argv);
-
-void *converseRunPe(void *arg);
+std::vector<CmiHandlerInfo> *CmiGetHandlerTable();
 
 /*Cmi Functions*/
 
 typedef struct State
 {
-    int pe;
+    int rank;
     int node;
     ConverseQueue<CmiMessage> *queue;
 
@@ -54,11 +55,7 @@ typedef struct State
 // state relevant functionality
 CmiState *CmiGetState(void);
 void CmiInitState(int pe);
-
-// state getters
-int CmiMyPE();
-int CmiMyNode();
-int CmiMyNodeSize();
+ConverseQueue<CmiMessage> *CmiGetQueue(int pe);
 
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);

@@ -2,6 +2,7 @@
 #include "convcore.h"
 #include "scheduler.h"
 #include "barrier.h"
+#include "queue.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -12,24 +13,21 @@
 int Cmi_argc;
 static char **Cmi_argv;
 int Cmi_npes;
+int Cmi_nranks;                                // TODO: this isnt used in old converse, but we need to know how many PEs are on our node?
+std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
 
 // PE LOCALS that need global access sometimes
-CmiState **Cmi_states; // array of state pointers
+static ConverseQueue<CmiMessage> **Cmi_queues; // array of queue pointers
 
 // PE LOCALS
-thread_local int CmiHandlerCount = 0;
-thread_local int CmiHandlerMax = 10;
-
-// TODO: this should be shared global var
-thread_local std::vector<CmiHandlerInfo> CmiHandlerTable;
-// TODO: change to cmi_myrank
-thread_local int Cmi_pe; // store my state alone
+thread_local int Cmi_myrank;
+thread_local CmiState *Cmi_state;
 
 // TODO: padding for all these thread_locals and cmistates?
 
 void CmiCallHandler(int handler, void *msg)
 {
-    CmiHandlerTable[handler].hdlr(msg);
+    CmiGetHandlerTable()->at(handler).hdlr(msg);
 }
 
 void *converseRunPe(void *args)
@@ -38,9 +36,11 @@ void *converseRunPe(void *args)
     int pe = *(int *)args;
     CmiInitState(pe);
 
+    // barrier to ensure all global structs are initialized
+    CmiNodeBarrier();
+
     // call initial function and start scheduler
     Cmi_startfn(Cmi_argc, Cmi_argv);
-
     CsdScheduler();
 
     return NULL;
@@ -54,8 +54,9 @@ void CmiStartThreads()
     // this would be much cleaner with std::threads
     int threadPeNums[Cmi_npes];
 
-    // allocate state array
-    Cmi_states = (CmiState **)malloc(sizeof(CmiState *) * Cmi_npes);
+    // allocate global arrayss
+    Cmi_queues = new ConverseQueue<CmiMessage> *[Cmi_npes];
+    CmiHandlerTable = new std::vector<CmiHandlerInfo> *[Cmi_npes];
 
     for (int i = 0; i < Cmi_npes; i++)
     {
@@ -94,30 +95,39 @@ void ConverseInit(int argc, char **argv, CmiStartFn fn)
 CmiState *
 CmiGetState(void)
 {
-    return Cmi_states[Cmi_pe];
+    return Cmi_state;
 };
 
-CmiState *
-CmiGetState(int pe)
+void CmiInitState(int rank)
 {
-    return Cmi_states[pe];
-};
+    // allocate state
+    Cmi_state = new CmiState;
+    Cmi_state->rank = rank; // TODO: for now, pe is just thread index
+    Cmi_state->node = 0;    // TODO: get node
 
-void CmiInitState(int pe)
+    Cmi_myrank = rank;
+
+    // allocate global entries
+    ConverseQueue<CmiMessage> *queue = new ConverseQueue<CmiMessage>();
+    std::vector<CmiHandlerInfo> *handlerTable = new std::vector<CmiHandlerInfo>();
+
+    Cmi_queues[Cmi_myrank] = queue;
+    CmiHandlerTable[Cmi_myrank] = handlerTable;
+}
+
+ConverseQueue<CmiMessage> *CmiGetQueue(int rank)
 {
-    CmiState *Cmi_state = new CmiState;
-    Cmi_state->pe = pe;  // TODO: for now, pe is just thread index
-    Cmi_state->node = 0; // TODO: get node
+    return Cmi_queues[rank];
+}
 
-    Cmi_state->queue = new ConverseQueue<CmiMessage>();
-
-    Cmi_states[pe] = Cmi_state;
-    Cmi_pe = pe;
+int CmiMyRank()
+{
+    return CmiGetState()->rank;
 }
 
 int CmiMyPE()
 {
-    return CmiGetState()->pe;
+    return CmiMyRank(); // TODO: fix once in multi node context
 }
 
 int CmiMyNode()
@@ -127,18 +137,22 @@ int CmiMyNode()
 
 int CmiMyNodeSize()
 {
-    return Cmi_npes; // TODO: get node size
+    return Cmi_npes; // TODO: get node size (this is not the same)
+}
+
+std::vector<CmiHandlerInfo> *CmiGetHandlerTable()
+{
+    return CmiHandlerTable[CmiMyRank()];
 }
 
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
-    ConverseQueue<CmiMessage> *queue = CmiGetState(destPE)->queue;
-    queue->push(*(CmiMessage *)msg);
+    Cmi_queues[destPE]->push(*(CmiMessage *)msg);
 }
 
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
 {
-    int destNode = 0; // TODO:
+    int destNode = 0; // TODO: get node from destPE?
     if (CmiMyNode() == destNode)
     {
         CmiPushPE(destPE, messageSize, msg);
@@ -150,12 +164,13 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
 }
 
 // HANDLER TOOLS
-#define DIST_BETWEEN_HANDLERS 1
 int CmiRegisterHandler(CmiHandler h)
 {
     // add handler to vector
-    CmiHandlerTable.push_back({h, nullptr});
-    return CmiHandlerTable.size() - 1;
+    std::vector<CmiHandlerInfo> *handlerVector = CmiGetHandlerTable();
+
+    handlerVector->push_back({h, nullptr});
+    return handlerVector->size() - 1;
 }
 
 void CmiNodeBarrier(void)

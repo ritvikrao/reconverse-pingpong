@@ -6,19 +6,19 @@ CpvDeclare(int, test);
 
 void ping_handler(void *vmsg)
 {
-  printf("Ping handler called\n");
+  printf("PING HANDLER CALLED\n");
 }
 
 CmiStartFn mymain(int argc, char **argv)
 {
-  CpvInitialize(int, test);
-  CpvAccess(test) = 42;
+  // CpvInitialize(int, test);
+  // CpvAccess(test) = 42;
 
-  printf("My PE is %d\n", CmiMyPE());
+  printf("My PE is %d\n", CmiMyRank());
 
   int handlerId = CmiRegisterHandler(ping_handler);
 
-  if (CmiMyPE() == 0 && CmiMyNodeSize() > 1)
+  if (CmiMyRank() == 0 && CmiMyNodeSize() > 1)
   {
     // create a message
     CmiMessage *msg = new CmiMessage;
