@@ -3,6 +3,7 @@
 
 #include <queue>
 #include <mutex>
+#include <stdexcept>
 
 class MutexAccessControl
 {
