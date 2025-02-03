@@ -1,25 +1,67 @@
 //+pe <N> threads, each running a scheduler
 #include "convcore.h"
 #include "scheduler.h"
+#include "barrier.h"
+#include "queue.h"
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
+
+// GLOBALS
+int Cmi_argc;
+static char **Cmi_argv;
+int Cmi_npes;
+int Cmi_nranks;                                // TODO: this isnt used in old converse, but we need to know how many PEs are on our node?
+std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
+
+// PE LOCALS that need global access sometimes
+static ConverseQueue<CmiMessage> **Cmi_queues; // array of queue pointers
+
+// PE LOCALS
+thread_local int Cmi_myrank;
+thread_local CmiState *Cmi_state;
+
+// TODO: padding for all these thread_locals and cmistates?
+
+void CmiCallHandler(int handler, void *msg)
+{
+    CmiGetHandlerTable()->at(handler).hdlr(msg);
+}
 
 void *converseRunPe(void *args)
 {
-    // call cmi start function, pass args to it
+    // init state
+    int pe = *(int *)args;
+    CmiInitState(pe);
+
+    // barrier to ensure all global structs are initialized
+    CmiNodeBarrier();
+
+    // call initial function and start scheduler
     Cmi_startfn(Cmi_argc, Cmi_argv);
-    // call scheduler
     CsdScheduler();
+
     return NULL;
 }
 
 void CmiStartThreads()
 {
     pthread_t threadId[Cmi_npes];
+
+    // TODO: how to get enumerated pe nums for each thread?
+    // this would be much cleaner with std::threads
+    int threadPeNums[Cmi_npes];
+
+    // allocate global arrayss
+    Cmi_queues = new ConverseQueue<CmiMessage> *[Cmi_npes];
+    CmiHandlerTable = new std::vector<CmiHandlerInfo> *[Cmi_npes];
+
     for (int i = 0; i < Cmi_npes; i++)
     {
-        pthread_create(&threadId[i], NULL, converseRunPe, NULL);
+        threadPeNums[i] = i;
+        pthread_create(&threadId[i], NULL, converseRunPe, &threadPeNums[i]);
     }
     for (int i = 0; i < Cmi_npes; i++)
     {
@@ -28,6 +70,7 @@ void CmiStartThreads()
 }
 
 // argument form: ./prog +pe <N>
+// TODO: this function need error checking
 void ConverseInit(int argc, char **argv, CmiStartFn fn)
 {
 
@@ -48,40 +91,68 @@ void ConverseInit(int argc, char **argv, CmiStartFn fn)
     free(Cmi_argv);
 }
 
-CmiState
+// CMI STATE
+CmiState *
 CmiGetState(void)
 {
-    CmiState state; // TODO: get current pe state
-    return state;
+    return Cmi_state;
 };
 
-void CmiInitState()
+void CmiInitState(int rank)
 {
-    CmiState state = CmiGetState();
-    state.pe = 0; // TOOD: get pe from thread info
-    state.rank = 0;
+    // allocate state
+    Cmi_state = new CmiState;
+    Cmi_state->rank = rank; // TODO: for now, pe is just thread index
+    Cmi_state->node = 0;    // TODO: get node
 
-    // TODO: store state in some global array indexed by thread id
+    Cmi_myrank = rank;
+
+    // allocate global entries
+    ConverseQueue<CmiMessage> *queue = new ConverseQueue<CmiMessage>();
+    std::vector<CmiHandlerInfo> *handlerTable = new std::vector<CmiHandlerInfo>();
+
+    Cmi_queues[Cmi_myrank] = queue;
+    CmiHandlerTable[Cmi_myrank] = handlerTable;
+}
+
+ConverseQueue<CmiMessage> *CmiGetQueue(int rank)
+{
+    return Cmi_queues[rank];
+}
+
+int CmiMyRank()
+{
+    return CmiGetState()->rank;
 }
 
 int CmiMyPE()
 {
-    return CmiGetState().pe;
+    return CmiMyRank(); // TODO: fix once in multi node context
 }
 
 int CmiMyNode()
 {
-    return CmiGetState().rank;
+    return CmiGetState()->node;
+}
+
+int CmiMyNodeSize()
+{
+    return Cmi_npes; // TODO: get node size (this is not the same)
+}
+
+std::vector<CmiHandlerInfo> *CmiGetHandlerTable()
+{
+    return CmiHandlerTable[CmiMyRank()];
 }
 
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
-    // TODO: add message to node-level queue
+    Cmi_queues[destPE]->push(*(CmiMessage *)msg);
 }
 
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
 {
-    int destNode = 0; // TODO:
+    int destNode = 0; // TODO: get node from destPE?
     if (CmiMyNode() == destNode)
     {
         CmiPushPE(destPE, messageSize, msg);
@@ -90,4 +161,20 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
     {
         // TODO: handle off node message send
     }
+}
+
+// HANDLER TOOLS
+int CmiRegisterHandler(CmiHandler h)
+{
+    // add handler to vector
+    std::vector<CmiHandlerInfo> *handlerVector = CmiGetHandlerTable();
+
+    handlerVector->push_back({h, nullptr});
+    return handlerVector->size() - 1;
+}
+
+void CmiNodeBarrier(void)
+{
+    static Barrier nodeBarrier(CmiMyNodeSize());
+    nodeBarrier.wait(); // TODO: this may be broken...
 }
