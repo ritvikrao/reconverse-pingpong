@@ -104,6 +104,7 @@ void CmiInitState(int rank)
     Cmi_state = new CmiState;
     Cmi_state->rank = rank; // TODO: for now, pe is just thread index
     Cmi_state->node = 0;    // TODO: get node
+    Cmi_state->stopFlag = 0;
 
     Cmi_myrank = rank;
 
@@ -128,6 +129,11 @@ int CmiMyRank()
 int CmiMyPE()
 {
     return CmiMyRank(); // TODO: fix once in multi node context
+}
+
+int CmiStopFlag()
+{
+    return CmiGetState()->stopFlag;
 }
 
 int CmiMyNode()
@@ -177,4 +183,9 @@ void CmiNodeBarrier(void)
 {
     static Barrier nodeBarrier(CmiMyNodeSize());
     nodeBarrier.wait(); // TODO: this may be broken...
+}
+
+void CsdExitScheduler()
+{
+    CmiGetState()->stopFlag = 1;
 }

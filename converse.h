@@ -16,3 +16,6 @@ int CmiMyPE();
 int CmiMyNode();
 int CmiMyNodeSize();
 int CmiMyRank();
+int CmiStopFlag();
+
+void CsdExitScheduler();

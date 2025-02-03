@@ -9,7 +9,7 @@ void CsdScheduler()
 
     ConverseQueue<CmiMessage> *queue = CmiGetQueue(CmiMyRank());
 
-    while (true)
+    while (CmiStopFlag() == 0)
     {
         if (!queue->empty())
         {
