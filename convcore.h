@@ -49,6 +49,7 @@ typedef struct State
     int rank;
     int node;
     ConverseQueue<CmiMessage> *queue;
+    int stopFlag;
 
 } CmiState;
 
