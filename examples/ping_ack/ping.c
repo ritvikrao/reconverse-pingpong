@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <converse.h>
+#include "converse.h"
+#include <pthread.h>
 //#include "ping.cpm.h"
 
 CpvDeclare(int, ping_index);
@@ -151,5 +152,5 @@ void ping_moduleinit(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	ConverseInit(argc,argv,ping_moduleinit,0,0);
+	ConverseInit(argc,argv,ping_moduleinit);
 }
