@@ -41,7 +41,6 @@ void *converseRunPe(void *args)
 
     // call initial function and start scheduler
     Cmi_startfn(Cmi_argc, Cmi_argv);
-    CmiNodeBarrier();
     CsdScheduler();
 
     return NULL;

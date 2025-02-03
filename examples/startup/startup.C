@@ -11,8 +11,8 @@ void ping_handler(void *vmsg)
 
 CmiStartFn mymain(int argc, char **argv)
 {
-  // CpvInitialize(int, test);
-  // CpvAccess(test) = 42;
+  CpvInitialize(int, test);
+  CpvAccess(test) = 42;
 
   printf("My PE is %d\n", CmiMyRank());
 
