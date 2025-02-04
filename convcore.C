@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <cstring>
 
 // GLOBALS
 int Cmi_argc;
@@ -102,6 +103,7 @@ void CmiInitState(int rank)
 {
     // allocate state
     Cmi_state = new CmiState;
+    Cmi_state->pe = rank;
     Cmi_state->rank = rank; // TODO: for now, pe is just thread index
     Cmi_state->node = 0;    // TODO: get node
     Cmi_state->stopFlag = 0;
@@ -156,6 +158,23 @@ void CmiPushPE(int destPE, int messageSize, void *msg)
     Cmi_queues[destPE]->push(*(CmiMessage *)msg);
 }
 
+void* CmiAlloc(int size)
+{
+    return malloc(size);
+}
+
+void CmiFree(void* msg)
+{
+    free(msg);
+}
+
+void CmiSyncSend(int destPE, int messageSize, void *msg)
+{
+    char* copymsg = (char*) CmiAlloc(messageSize);
+    std::memcpy(copymsg, msg, messageSize);
+    CmiSyncSendAndFree(destPE, messageSize, copymsg);
+}
+
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
 {
     int destNode = 0; // TODO: get node from destPE?
@@ -167,6 +186,45 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
     {
         // TODO: handle off node message send
     }
+    CmiFree(msg);
+}
+
+void CmiSyncBroadcast(int size, void* msg)
+{
+    char *copymsg;
+    copymsg = (char *)CmiAlloc(size);
+    std::memcpy(copymsg, msg, size);
+    CmiSyncBroadcastAndFree(size,copymsg);
+}
+
+void CmiSyncBroadcastAndFree(int size, void *msg) 
+{
+
+    CmiState* cs = CmiGetState();
+
+    for (int i = cs->pe+1; i < Cmi_npes; i++ )
+        CmiSyncSend(i, size, msg);
+
+    for (int i = 0; i < cs->pe; i++ )
+        CmiSyncSend(i, size, msg);
+
+    CmiFree(msg);
+}
+
+void CmiSyncBroadcastAll(int size, void* msg)
+{
+    char *copymsg;
+    copymsg = (char *)CmiAlloc(size);
+    std::memcpy(copymsg, msg, size);
+    CmiSyncBroadcastAllAndFree(size,copymsg);
+}
+
+void CmiSyncBroadcastAllAndFree(int size, void *msg) 
+{
+    for (int i = 0; i < Cmi_npes; i++ )
+        CmiSyncSend(i, size, msg);
+
+    CmiFree(msg);
 }
 
 // HANDLER TOOLS

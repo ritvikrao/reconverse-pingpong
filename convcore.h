@@ -46,6 +46,7 @@ std::vector<CmiHandlerInfo> *CmiGetHandlerTable();
 
 typedef struct State
 {
+    int pe;
     int rank;
     int node;
     ConverseQueue<CmiMessage> *queue;
@@ -58,9 +59,20 @@ CmiState *CmiGetState(void);
 void CmiInitState(int pe);
 ConverseQueue<CmiMessage> *CmiGetQueue(int pe);
 
+//message allocation
+void* CmiAlloc(int size);
+void CmiFree(void* msg);
+
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);
+void CmiSyncSend(int destPE, int messageSize, void *msg);
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg);
+
+// broadcasts
+void CmiSyncBroadcast(int size, void *msg);
+void CmiSyncBroadcastAndFree(int size, void *msg);
+void CmiSyncBroadcastAll(int size, void *msg);
+void CmiSyncBroadcastAllAndFree(int size, void *msg);
 
 void CmiNodeBarrier(void);
 

@@ -36,7 +36,7 @@ CmiStartFn mymain(int argc, char **argv)
   if (CmiMyRank() == 0 && CmiMyNodeSize() > 1)
   {
     // create a message
-    CmiMessage *msg = new CmiMessage;
+    CmiMessage *msg = (CmiMessage*) CmiAlloc(sizeof(CmiMessage));
     msg->header.handlerId = handlerId;
     msg->header.messageSize = sizeof(CmiMessage);
     msg->header.destPE = 1;
