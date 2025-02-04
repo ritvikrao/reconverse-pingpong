@@ -186,20 +186,33 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
     {
         // TODO: handle off node message send
     }
-    CmiFree(msg);
 }
 
 void CmiSyncBroadcast(int size, void* msg)
 {
-    char *copymsg;
-    copymsg = (char *)CmiAlloc(size);
-    std::memcpy(copymsg, msg, size);
-    CmiSyncBroadcastAndFree(size,copymsg);
+    CmiState* cs = CmiGetState();
+
+    for (int i = cs->pe+1; i < Cmi_npes; i++ )
+        CmiSyncSend(i, size, msg);
+
+    for (int i = 0; i < cs->pe; i++ )
+        CmiSyncSend(i, size, msg);
 }
 
 void CmiSyncBroadcastAndFree(int size, void *msg) 
 {
+    CmiSyncBroadcast(size, msg);
+    CmiFree(msg);
+}
 
+void CmiSyncBroadcastAll(int size, void* msg)
+{
+    for (int i = 0; i < Cmi_npes; i++ )
+        CmiSyncSend(i, size, msg);
+}
+
+void CmiSyncBroadcastAllAndFree(int size, void *msg) 
+{
     CmiState* cs = CmiGetState();
 
     for (int i = cs->pe+1; i < Cmi_npes; i++ )
@@ -208,23 +221,7 @@ void CmiSyncBroadcastAndFree(int size, void *msg)
     for (int i = 0; i < cs->pe; i++ )
         CmiSyncSend(i, size, msg);
 
-    CmiFree(msg);
-}
-
-void CmiSyncBroadcastAll(int size, void* msg)
-{
-    char *copymsg;
-    copymsg = (char *)CmiAlloc(size);
-    std::memcpy(copymsg, msg, size);
-    CmiSyncBroadcastAllAndFree(size,copymsg);
-}
-
-void CmiSyncBroadcastAllAndFree(int size, void *msg) 
-{
-    for (int i = 0; i < Cmi_npes; i++ )
-        CmiSyncSend(i, size, msg);
-
-    CmiFree(msg);
+    CmiSyncSendAndFree(cs->pe, size, msg);
 }
 
 // HANDLER TOOLS
