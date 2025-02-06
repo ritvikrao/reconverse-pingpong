@@ -27,6 +27,16 @@ void ping_stop_handler(void *msg)
 }
 
 void send_msg() {
+  CmiMessage *msg = new CmiMessage;
+  msg->header.handlerId = ping_index;
+  msg->header.messageSize = sizeof(CmiMessage);
+  msg->header.destPE = CmiMyRank() + CmiMyNodeSize() / 2;
+  //payload
+  int ints_to_send[(CpvAccess(msg_size) - CmiMsgHeaderSizeBytes) / sizeof(int)];
+  for (int i = 0; i < (CpvAccess(msg_size) - CmiMsgHeaderSizeBytes) / sizeof(int); ++i) ints_to_send[i] = i;
+  msg->data = (char*) ints_to_send; //will need to fix this for off-node messages
+  CmiSyncSendAndFree(msg->header.destPE, msg->header.messageSize, msg);
+  /*
   struct myMsg *msg;
   msg = (message)CmiAlloc(CpvAccess(msg_size));
   // Fills payload with ints
@@ -39,20 +49,24 @@ void send_msg() {
   CmiSetHandler(msg, CpvAccess(ping_index));
   //Send from my pe-i on node-0 to q+i on node-1
   CmiSyncSendAndFree(CmiNumPes() / 2 + CmiMyPe(), CpvAccess(msg_size), msg);
+  */
 }
 
 void call_exit(){
   for(int i=0;i<CmiNumPes();i++) {
-    message msg = (message)CmiAlloc(CmiMsgHeaderSizeBytes);
-    CmiSetHandler(msg, CpvAccess(stop_index));
-    CmiSyncSendAndFree(i, CmiMsgHeaderSizeBytes, msg);
+    CmiMessage *msg = new CmiMessage;
+    msg->header.handlerId = stop_index;
+    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.destPE = i;
+    CmiSyncSendAndFree(i, msg->header.messageSize, msg);
   }
 }
 
 void ping_handler(void *vmsg)
 {
   int i;
-  message msg = (message)vmsg;
+  CmiMessage *msg = (CmiMessage*) vmsg;
+  int *incoming_data = (int*) msg->data;
   // if this is a receiving PE
   if (CmiMyPe() >= CmiNumPes() / 2) {
     long sum = 0;
@@ -60,7 +74,7 @@ void ping_handler(void *vmsg)
     double num_ints = (CpvAccess(msg_size) - CmiMsgHeaderSizeBytes) / sizeof(int);
     double exp_avg = (num_ints - 1) / 2;
     for (i = 0; i < num_ints; ++i) {
-      sum += msg->payload[i];
+      sum += incoming_data[i];
     }
     if(result < 0) {
       CmiPrintf("Error! in computation");
@@ -75,8 +89,14 @@ void ping_handler(void *vmsg)
     //   CmiPrintf("Calculation OK\n"); // DEBUG: Computation Check
       
     CmiFree(msg);
+    msg = new CmiMessage;
+    msg->header.handlerId = ackmsg_index;
+    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.destPE = 0;
+    /*
     msg = (message)CmiAlloc(CpvAccess(msg_size));
     CmiSetHandler(msg, CpvAccess(ackmsg_index));
+    */
     CmiSyncSendAndFree(0, CpvAccess(msg_size), msg);
   } else
     CmiPrintf("\nError: Only node-1 can be receiving node!!!!\n");
@@ -85,7 +105,7 @@ void ping_handler(void *vmsg)
 void pe0_ack_handler(void *vmsg)
 {
   int pe;
-  message msg = (message)vmsg;
+  CmiMessage *msg = (message)vmsg;
    //Pe-0 receives all acks
   CpvAccess(ack_count) = 1 + CpvAccess(ack_count);
 
@@ -131,18 +151,18 @@ void ping_moduleinit(int argc, char **argv)
   CpvAccess(msg_size) = 16+CmiMsgHeaderSizeBytes+100;
 //  void CpmModuleInit(void);
 //  void CfutureModuleInit(void);
-  void CpthreadModuleInit(void);
+  //void CpthreadModuleInit(void);
 
 //  CpmModuleInit();
 //  CfutureModuleInit();
-  CpthreadModuleInit();
+  //CpthreadModuleInit();
 //  CpmInitializeThisModule();
   // Set runtime cpuaffinity
 //  CmiInitCPUAffinity(argv);
   // Initialize CPU topology
 //  CmiInitCPUTopology(argv);
   // Wait for all PEs of the node to complete topology init
-        CmiNodeAllBarrier();
+        CmiNodeBarrier();
 
   // Update the argc after runtime parameters are extracted out
   argc = CmiGetArgc(argv);
