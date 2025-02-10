@@ -20,7 +20,7 @@ typedef struct Header
 typedef struct CmiMessageStruct
 {
     CmiMessageHeader header;
-    char data[];
+    char* data;
 } CmiMessage;
 
 void CmiStartThreads(char **argv);
