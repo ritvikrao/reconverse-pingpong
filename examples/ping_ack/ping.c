@@ -34,7 +34,9 @@ void send_msg() {
   msg->header.messageSize = sizeof(CmiMessage);
   msg->header.destPE = CmiMyRank() + CmiMyNodeSize() / 2;
   //payload
-  int ints_to_send[(CpvAccess(msg_size) - msg->header.messageSize) / sizeof(int)];
+  int total_bytes = CpvAccess(msg_size) - msg->header.messageSize;
+  printf("\ntotal int bytes = %d", total_bytes);
+  int *ints_to_send = (int*)malloc(CpvAccess(msg_size) - msg->header.messageSize);
   for (int i = 0; i < (CpvAccess(msg_size) - msg->header.messageSize) / sizeof(int); ++i) ints_to_send[i] = i;
   msg->data = (char*) ints_to_send; //will need to fix this for off-node messages
   CmiSyncSendAndFree(msg->header.destPE, msg->header.messageSize, msg);
@@ -67,13 +69,14 @@ void call_exit(){
 void ping_handler(void *vmsg)
 {
   int i;
-  CmiMessage *msg = (CmiMessage*) vmsg;
-  int *incoming_data = (int*) msg->data;
+  //CmiMessage *msg = (CmiMessage*) vmsg;
+  int *incoming_data = (int*)vmsg;
   // if this is a receiving PE
   if (CmiMyRank() >= CmiMyNodeSize() / 2) {
     long sum = 0;
     long result = 0;
-    double num_ints = (CpvAccess(msg_size) - msg->header.messageSize) / sizeof(int);
+    int num_ints = (CpvAccess(msg_size) - sizeof(CmiMessage)) / sizeof(int);
+    printf("num_ints=%d\n",num_ints);
     double exp_avg = (num_ints - 1) / 2;
     for (i = 0; i < num_ints; ++i) {
       sum += incoming_data[i];
@@ -90,8 +93,8 @@ void ping_handler(void *vmsg)
     // else
     //   CmiPrintf("Calculation OK\n"); // DEBUG: Computation Check
       
-    CmiFree(msg);
-    msg = new CmiMessage;
+    CmiFree(vmsg);
+    CmiMessage *msg = new CmiMessage;
     msg->header.handlerId = CpvAccess(ackmsg_index);
     msg->header.messageSize = sizeof(CmiMessage);
     msg->header.destPE = 0;

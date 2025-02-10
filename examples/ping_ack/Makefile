@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -std=c++11 -pthread -I ../..
+CXXFLAGS := -std=c++11 -pthread -I ../.. -g
 
 # Source files
 SRCS := ping.c ../../convcore.C ../../scheduler.C ../../queue.C
