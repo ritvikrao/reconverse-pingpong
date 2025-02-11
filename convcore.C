@@ -18,7 +18,7 @@ int Cmi_nranks;                                // TODO: this isnt used in old co
 std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
 
 // PE LOCALS that need global access sometimes
-static ConverseQueue<CmiMessage *> **Cmi_queues; // array of queue pointers
+static ConverseQueue<void *> **Cmi_queues; // array of queue pointers
 
 // PE LOCALS
 thread_local int Cmi_myrank;
@@ -56,7 +56,7 @@ void CmiStartThreads()
     int threadPeNums[Cmi_npes];
 
     // allocate global arrayss
-    Cmi_queues = new ConverseQueue<CmiMessage *> *[Cmi_npes];
+    Cmi_queues = new ConverseQueue<void *> *[Cmi_npes];
     CmiHandlerTable = new std::vector<CmiHandlerInfo> *[Cmi_npes];
 
     for (int i = 0; i < Cmi_npes; i++)
@@ -111,14 +111,14 @@ void CmiInitState(int rank)
     Cmi_myrank = rank;
 
     // allocate global entries
-    ConverseQueue<CmiMessage *> *queue = new ConverseQueue<CmiMessage *>();
+    ConverseQueue<void *> *queue = new ConverseQueue<void *>();
     std::vector<CmiHandlerInfo> *handlerTable = new std::vector<CmiHandlerInfo>();
 
     Cmi_queues[Cmi_myrank] = queue;
     CmiHandlerTable[Cmi_myrank] = handlerTable;
 }
 
-ConverseQueue<CmiMessage *> *CmiGetQueue(int rank)
+ConverseQueue<void *> *CmiGetQueue(int rank)
 {
     return Cmi_queues[rank];
 }
@@ -155,7 +155,7 @@ std::vector<CmiHandlerInfo> *CmiGetHandlerTable()
 
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
-    Cmi_queues[destPE]->push((CmiMessage *)msg);
+    Cmi_queues[destPE]->push(msg);
 }
 
 void *CmiAlloc(int size)

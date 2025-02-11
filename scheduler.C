@@ -7,18 +7,19 @@ void CsdScheduler()
 {
     // get pthread level queue
 
-    ConverseQueue<CmiMessage *> *queue = CmiGetQueue(CmiMyRank());
+    ConverseQueue<void *> *queue = CmiGetQueue(CmiMyRank());
 
     while (CmiStopFlag() == 0)
     {
         if (!queue->empty())
         {
             // get next event (guaranteed to be there because only single consumer)
-            CmiMessage *msg = queue->pop();
+            void *msg = queue->pop();
 
             // process event
-            CmiMessageHeader header = msg->header;
-            int handler = header.handlerId;
+            CmiMessageHeader *header = (CmiMessageHeader *)msg;
+            void *data = (void *)((char *)msg + CmiMessageHeaderSize);
+            int handler = header->handlerId;
 
             // call handler
             CmiCallHandler(handler, msg);
