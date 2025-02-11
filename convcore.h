@@ -49,7 +49,7 @@ typedef struct State
     int pe;
     int rank;
     int node;
-    ConverseQueue<CmiMessage> *queue;
+    ConverseQueue<CmiMessage *> *queue;
     int stopFlag;
 
 } CmiState;
@@ -57,11 +57,11 @@ typedef struct State
 // state relevant functionality
 CmiState *CmiGetState(void);
 void CmiInitState(int pe);
-ConverseQueue<CmiMessage> *CmiGetQueue(int pe);
+ConverseQueue<CmiMessage *> *CmiGetQueue(int pe);
 
-//message allocation
-void* CmiAlloc(int size);
-void CmiFree(void* msg);
+// message allocation
+void *CmiAlloc(int size);
+void CmiFree(void *msg);
 
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);

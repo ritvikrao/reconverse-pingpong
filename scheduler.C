@@ -7,21 +7,21 @@ void CsdScheduler()
 {
     // get pthread level queue
 
-    ConverseQueue<CmiMessage> *queue = CmiGetQueue(CmiMyRank());
+    ConverseQueue<CmiMessage *> *queue = CmiGetQueue(CmiMyRank());
 
     while (CmiStopFlag() == 0)
     {
         if (!queue->empty())
         {
             // get next event (guaranteed to be there because only single consumer)
-            CmiMessage message = queue->pop();
+            CmiMessage *msg = queue->pop();
 
             // process event
-            CmiMessageHeader header = message.header;
+            CmiMessageHeader header = msg->header;
             int handler = header.handlerId;
 
             // call handler
-            CmiCallHandler(handler, message.data);
+            CmiCallHandler(handler, msg);
         }
 
         // TODO: suspend? or spin?
