@@ -8,6 +8,12 @@ CpvDeclare(int, exitHandlerId);
 int ping_handlerID;
 int payloadSize = 1 * sizeof(int);
 
+struct Message
+{
+  CmiMessageHeader header;
+  int data[1];
+};
+
 void stop_handler(void *vmsg)
 {
   CsdExitScheduler();
@@ -15,26 +21,25 @@ void stop_handler(void *vmsg)
 
 void ping_handler(void *vmsg)
 {
-  CmiMessage *msg = (CmiMessage *)vmsg;
+  Message *msg = (Message *)vmsg;
   printf("PE %d pinged in ring with index %d.\n", CmiMyRank(), msg->data[0]);
 
   if (CmiMyRank() != CmiMyNodeSize() - 1)
   {
-    CmiMessage *newmsg = (CmiMessage *)CmiAlloc(sizeof(CmiMessage) + payloadSize);
+    Message *newmsg = new Message;
     newmsg->header.handlerId = ping_handlerID;
-    newmsg->header.messageSize = sizeof(CmiMessage) + payloadSize;
+    newmsg->header.messageSize = sizeof(Message);
     newmsg->header.destPE = CmiMyRank() + 1;
 
     newmsg->data[0] = msg->data[0] + 1;
-    printf("PE %d sending to PE %d with data %d\n", CmiMyRank(), CmiMyRank() + 1, newmsg->data[0]);
 
     CmiSyncSendAndFree(CmiMyRank() + 1, newmsg->header.messageSize, newmsg);
   }
   else
   {
-    CmiMessage *msg = (CmiMessage *)CmiAlloc(sizeof(CmiMessage));
+    Message *msg = new Message;
     msg->header.handlerId = CpvAccess(exitHandlerId);
-    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.messageSize = sizeof(Message);
     CmiSyncBroadcastAllAndFree(msg->header.messageSize, msg);
   }
 }
@@ -49,9 +54,9 @@ CmiStartFn mymain(int argc, char **argv)
   if (CmiMyRank() == 0)
   {
     // create a message
-    CmiMessage *msg = (CmiMessage *)CmiAlloc(sizeof(CmiMessage) + payloadSize);
+    Message *msg = new Message;
     msg->header.handlerId = ping_handlerID;
-    msg->header.messageSize = sizeof(CmiMessage) + payloadSize;
+    msg->header.messageSize = sizeof(Message);
     msg->header.destPE = 0;
     msg->data[0] = 0;
 
