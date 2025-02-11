@@ -17,11 +17,11 @@ typedef struct Header
     int destPE;
 } CmiMessageHeader;
 
-typedef struct CmiMessageStruct
-{
-    CmiMessageHeader header;
-    char* data;
-} CmiMessage;
+// typedef struct CmiMessageStruct
+// {
+//     CmiMessageHeader header;
+//     char data[];
+// } CmiMessage;
 
 void CmiStartThreads(char **argv);
 void *converseRunPe(void *arg);
@@ -49,7 +49,7 @@ typedef struct State
     int pe;
     int rank;
     int node;
-    ConverseQueue<CmiMessage> *queue;
+    ConverseQueue<void *> *queue;
     int stopFlag;
 
 } CmiState;
@@ -57,11 +57,11 @@ typedef struct State
 // state relevant functionality
 CmiState *CmiGetState(void);
 void CmiInitState(int pe);
-ConverseQueue<CmiMessage> *CmiGetQueue(int pe);
+ConverseQueue<void *> *CmiGetQueue(int pe);
 
-//message allocation
-void* CmiAlloc(int size);
-void CmiFree(void* msg);
+// message allocation
+void *CmiAlloc(int size);
+void CmiFree(void *msg);
 
 // message sending
 void CmiPushPE(int destPE, int messageSize, void *msg);
@@ -76,8 +76,8 @@ void CmiSyncBroadcastAllAndFree(int size, void *msg);
 
 void CmiNodeBarrier(void);
 
-//node queue
-ConverseQueue<CmiMessage> *CmiGetNodeQueue();
+// node queue
+ConverseQueue<void *> *CmiGetNodeQueue();
 void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg);
 
 #endif

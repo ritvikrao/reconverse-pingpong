@@ -4,6 +4,11 @@
 
 CpvDeclare(int, exitHandlerId);
 
+struct Message
+{
+  CmiMessageHeader header;
+};
+
 void stop_handler(void *vmsg)
 {
   CsdExitScheduler();
@@ -24,11 +29,11 @@ CmiStartFn mymain(int argc, char **argv)
   if (CmiMyPE() == 0)
   {
     // create a message
-    CmiMessage *msg = (CmiMessage*) CmiAlloc(sizeof(CmiMessage));
+    Message *msg = new Message;
     msg->header.handlerId = handlerId;
-    msg->header.messageSize = sizeof(CmiMessage);
-    
-    CmiSyncBroadcastAllAndFree(msg->header.messageSize, msg);     
+    msg->header.messageSize = sizeof(Message);
+
+    CmiSyncBroadcastAllAndFree(msg->header.messageSize, msg);
   }
 
   // printf("Answer to the Ultimate Question of Life, the Universe, and Everything: %d\n", CpvAccess(test));

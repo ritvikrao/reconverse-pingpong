@@ -7,38 +7,40 @@ void CsdScheduler()
 {
     // get pthread level queue
 
-    ConverseQueue<CmiMessage> *queue = CmiGetQueue(CmiMyRank());
-    ConverseQueue<CmiMessage> *nodeQueue = CmiGetNodeQueue();
+    ConverseQueue<void *> *queue = CmiGetQueue(CmiMyRank());
+    ConverseQueue<void *> *nodeQueue = CmiGetNodeQueue();
 
     while (CmiStopFlag() == 0)
     {
-        //poll node queue
-        if(!nodeQueue->empty())
+        // poll node queue
+        if (!nodeQueue->empty())
         {
             // get next event (guaranteed to be there because only single consumer)
-            CmiMessage message = nodeQueue->pop();
+            void *msg = nodeQueue->pop();
 
             // process event
-            CmiMessageHeader header = message.header;
-            int handler = header.handlerId;
+            CmiMessageHeader *header = (CmiMessageHeader *)msg;
+            void *data = (void *)((char *)msg + CmiMessageHeaderSize);
+            int handler = header->handlerId;
 
             // call handler
-            CmiCallHandler(handler, message.data);
+            CmiCallHandler(handler, data);
             continue;
         }
 
-        //poll thread queue
+        // poll thread queue
         else if (!queue->empty())
         {
             // get next event (guaranteed to be there because only single consumer)
-            CmiMessage message = queue->pop();
+            void *msg = queue->pop();
 
             // process event
-            CmiMessageHeader header = message.header;
-            int handler = header.handlerId;
+            CmiMessageHeader *header = (CmiMessageHeader *)msg;
+            void *data = (void *)((char *)msg + CmiMessageHeaderSize);
+            int handler = header->handlerId;
 
             // call handler
-            CmiCallHandler(handler, message.data);
+            CmiCallHandler(handler, msg);
         }
 
         // TODO: suspend? or spin?

@@ -16,10 +16,10 @@ static char **Cmi_argv;
 int Cmi_npes;
 int Cmi_nranks;                                // TODO: this isnt used in old converse, but we need to know how many PEs are on our node?
 std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
-ConverseQueue<CmiMessage> *CmiNodeQueue;
+ConverseQueue<void *> *CmiNodeQueue;
 
 // PE LOCALS that need global access sometimes
-static ConverseQueue<CmiMessage> **Cmi_queues; // array of queue pointers
+static ConverseQueue<void *> **Cmi_queues; // array of queue pointers
 
 // PE LOCALS
 thread_local int Cmi_myrank;
@@ -57,7 +57,7 @@ void CmiStartThreads()
     int threadPeNums[Cmi_npes];
 
     // allocate global arrayss
-    Cmi_queues = new ConverseQueue<CmiMessage> *[Cmi_npes];
+    Cmi_queues = new ConverseQueue<void *> *[Cmi_npes];
     CmiHandlerTable = new std::vector<CmiHandlerInfo> *[Cmi_npes];
 
     for (int i = 0; i < Cmi_npes; i++)
@@ -112,16 +112,16 @@ void CmiInitState(int rank)
     Cmi_myrank = rank;
 
     // allocate global entries
-    ConverseQueue<CmiMessage> *queue = new ConverseQueue<CmiMessage>();
+    ConverseQueue<void *> *queue = new ConverseQueue<void *>();
     std::vector<CmiHandlerInfo> *handlerTable = new std::vector<CmiHandlerInfo>();
 
-    CmiNodeQueue = new ConverseQueue<CmiMessage>();
+    CmiNodeQueue = new ConverseQueue<void *>();
 
     Cmi_queues[Cmi_myrank] = queue;
     CmiHandlerTable[Cmi_myrank] = handlerTable;
 }
 
-ConverseQueue<CmiMessage> *CmiGetQueue(int rank)
+ConverseQueue<void *> *CmiGetQueue(int rank)
 {
     return Cmi_queues[rank];
 }
@@ -158,28 +158,29 @@ std::vector<CmiHandlerInfo> *CmiGetHandlerTable()
 
 void CmiPushPE(int destPE, int messageSize, void *msg)
 {
-    Cmi_queues[destPE]->push(*(CmiMessage *)msg);
+    Cmi_queues[destPE]->push(msg);
 }
 
-void* CmiAlloc(int size)
+void *CmiAlloc(int size)
 {
     return malloc(size);
 }
 
-void CmiFree(void* msg)
+void CmiFree(void *msg)
 {
     free(msg);
 }
 
 void CmiSyncSend(int destPE, int messageSize, void *msg)
 {
-    char* copymsg = (char*) CmiAlloc(messageSize);
+    char *copymsg = (char *)CmiAlloc(messageSize);
     std::memcpy(copymsg, msg, messageSize);
     CmiSyncSendAndFree(destPE, messageSize, copymsg);
 }
 
 void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
 {
+    // printf("Sending message to PE %d\n", destPE);
     int destNode = 0; // TODO: get node from destPE?
     if (CmiMyNode() == destNode)
     {
@@ -191,37 +192,37 @@ void CmiSyncSendAndFree(int destPE, int messageSize, void *msg)
     }
 }
 
-void CmiSyncBroadcast(int size, void* msg)
+void CmiSyncBroadcast(int size, void *msg)
 {
-    CmiState* cs = CmiGetState();
+    CmiState *cs = CmiGetState();
 
-    for (int i = cs->pe+1; i < Cmi_npes; i++ )
+    for (int i = cs->pe + 1; i < Cmi_npes; i++)
         CmiSyncSend(i, size, msg);
 
-    for (int i = 0; i < cs->pe; i++ )
+    for (int i = 0; i < cs->pe; i++)
         CmiSyncSend(i, size, msg);
 }
 
-void CmiSyncBroadcastAndFree(int size, void *msg) 
+void CmiSyncBroadcastAndFree(int size, void *msg)
 {
     CmiSyncBroadcast(size, msg);
     CmiFree(msg);
 }
 
-void CmiSyncBroadcastAll(int size, void* msg)
+void CmiSyncBroadcastAll(int size, void *msg)
 {
-    for (int i = 0; i < Cmi_npes; i++ )
+    for (int i = 0; i < Cmi_npes; i++)
         CmiSyncSend(i, size, msg);
 }
 
-void CmiSyncBroadcastAllAndFree(int size, void *msg) 
+void CmiSyncBroadcastAllAndFree(int size, void *msg)
 {
-    CmiState* cs = CmiGetState();
+    CmiState *cs = CmiGetState();
 
-    for (int i = cs->pe+1; i < Cmi_npes; i++ )
+    for (int i = cs->pe + 1; i < Cmi_npes; i++)
         CmiSyncSend(i, size, msg);
 
-    for (int i = 0; i < cs->pe; i++ )
+    for (int i = 0; i < cs->pe; i++)
         CmiSyncSend(i, size, msg);
 
     CmiSyncSendAndFree(cs->pe, size, msg);
@@ -248,19 +249,19 @@ void CsdExitScheduler()
     CmiGetState()->stopFlag = 1;
 }
 
-ConverseQueue<CmiMessage> *CmiGetNodeQueue()
+ConverseQueue<void *> *CmiGetNodeQueue()
 {
     return CmiNodeQueue;
 }
 
 void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg)
 {
-    if(CmiMyNode() == destNode)
+    if (CmiMyNode() == destNode)
     {
-        CmiNodeQueue->push(*(CmiMessage*)msg);
+        CmiNodeQueue->push(msg);
     }
     else
     {
-        //TODO: if off node
+        // TODO: if off node
     }
 }

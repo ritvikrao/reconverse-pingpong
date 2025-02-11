@@ -6,6 +6,11 @@ CpvDeclare(int, test);
 CpvDeclare(int, exitHandlerId);
 CpvDeclare(int, nodeHandlerId);
 
+struct Message
+{
+  CmiMessageHeader header;
+};
+
 void stop_handler(void *vmsg)
 {
   CsdExitScheduler();
@@ -14,11 +19,11 @@ void stop_handler(void *vmsg)
 void nodeQueueTest(void *msg)
 {
   printf("NODE QUEUE TEST on pe %d\n", CmiMyRank());
-  for(int i=0; i<CmiMyNodeSize(); i++)
+  for (int i = 0; i < CmiMyNodeSize(); i++)
   {
-    CmiMessage *msg = new CmiMessage;
+    Message *msg = new Message;
     msg->header.handlerId = CpvAccess(exitHandlerId);
-    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.messageSize = sizeof(Message);
     msg->header.destPE = i;
 
     CmiSyncSendAndFree(i, msg->header.messageSize, msg);
@@ -28,9 +33,9 @@ void nodeQueueTest(void *msg)
 void ping_handler(void *vmsg)
 {
   printf("PING HANDLER CALLED\n");
-  CmiMessage *msg = new CmiMessage;
+  Message *msg = new Message;
   msg->header.handlerId = CpvAccess(nodeHandlerId);
-  msg->header.messageSize = sizeof(CmiMessage);
+  msg->header.messageSize = sizeof(Message);
   CmiSyncNodeSendAndFree(0, msg->header.messageSize, msg);
 }
 
@@ -46,9 +51,9 @@ CmiStartFn mymain(int argc, char **argv)
   if (CmiMyRank() == 0 && CmiMyNodeSize() > 1)
   {
     // create a message
-    CmiMessage *msg = (CmiMessage*) CmiAlloc(sizeof(CmiMessage));
+    Message *msg = (Message *)CmiAlloc(sizeof(Message));
     msg->header.handlerId = handlerId;
-    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.messageSize = sizeof(Message);
     msg->header.destPE = 1;
 
     // TODO: why is this info passed within message an also separately
@@ -62,9 +67,9 @@ CmiStartFn mymain(int argc, char **argv)
   {
     printf("Only one node, send self test\n");
     // create a message
-    CmiMessage *msg = new CmiMessage;
+    Message *msg = new Message;
     msg->header.handlerId = handlerId;
-    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.messageSize = sizeof(Message);
     msg->header.destPE = 1;
 
     // TODO: why is this info passed within message an also separately
