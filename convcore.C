@@ -16,6 +16,7 @@ static char **Cmi_argv;
 int Cmi_npes;
 int Cmi_nranks;                                // TODO: this isnt used in old converse, but we need to know how many PEs are on our node?
 std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
+ConverseQueue<void *> *CmiNodeQueue;
 
 // PE LOCALS that need global access sometimes
 static ConverseQueue<void *> **Cmi_queues; // array of queue pointers
@@ -113,6 +114,8 @@ void CmiInitState(int rank)
     // allocate global entries
     ConverseQueue<void *> *queue = new ConverseQueue<void *>();
     std::vector<CmiHandlerInfo> *handlerTable = new std::vector<CmiHandlerInfo>();
+
+    CmiNodeQueue = new ConverseQueue<void *>();
 
     Cmi_queues[Cmi_myrank] = queue;
     CmiHandlerTable[Cmi_myrank] = handlerTable;
@@ -244,4 +247,21 @@ void CmiNodeBarrier(void)
 void CsdExitScheduler()
 {
     CmiGetState()->stopFlag = 1;
+}
+
+ConverseQueue<void *> *CmiGetNodeQueue()
+{
+    return CmiNodeQueue;
+}
+
+void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg)
+{
+    if (CmiMyNode() == destNode)
+    {
+        CmiNodeQueue->push(msg);
+    }
+    else
+    {
+        // TODO: if off node
+    }
 }
