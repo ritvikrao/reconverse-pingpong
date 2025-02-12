@@ -27,6 +27,9 @@ thread_local CmiState *Cmi_state;
 
 // TODO: padding for all these thread_locals and cmistates?
 
+/* defined in cpuaffinity.C */
+void CmiInitCPUAffinityUtil(void);
+
 void CmiCallHandler(int handler, void *msg)
 {
     CmiGetHandlerTable()->at(handler).hdlr(msg);
@@ -37,7 +40,7 @@ void *converseRunPe(void *args)
     // init state
     int pe = *(int *)args;
     CmiInitState(pe);
-
+    CmiSetCPUAffinityLogical(pe);
     // barrier to ensure all global structs are initialized
     CmiNodeBarrier();
 
@@ -110,6 +113,9 @@ void CmiInitState(int rank)
     Cmi_state->stopFlag = 0;
 
     Cmi_myrank = rank;
+
+    CmiInitHwlocTopology();
+    CmiInitCPUAffinityUtil();
 
     // allocate global entries
     ConverseQueue<CmiMessage> *queue = new ConverseQueue<CmiMessage>();

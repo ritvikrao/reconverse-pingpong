@@ -24,6 +24,8 @@ void print_results() {
 //CpmInvokable ping_stop()
 void ping_stop_handler(void *msg)
 {
+  if(CmiMyPE()==0)
+    printf("\nProgram End");
   CmiFree(msg);
   CsdExitScheduler();
 }
@@ -154,6 +156,7 @@ void ping_moduleinit(int argc, char **argv)
   CpvAccess(ackmsg_index) = CmiRegisterHandler(pe0_ack_handler);
   CpvAccess(stop_index) = CmiRegisterHandler(ping_stop_handler);
   CpvAccess(msg_size) = 16+sizeof(CmiMessage)+100;
+  printf("\nPE-%d, cpu-%d", CmiMyPE(), sched_getcpu());
 //  void CpmModuleInit(void);
 //  void CfutureModuleInit(void);
   //void CpthreadModuleInit(void);
