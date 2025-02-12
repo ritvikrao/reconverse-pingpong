@@ -9,13 +9,12 @@ CpvDeclare(int, stop_index);
 CpvDeclare(int, msg_size);
 CpvDeclare(int, ack_count);
 
-/*
-typedef struct myMsg
+
+struct Message
 {
-  char header[CmiMsgHeaderSizeBytes];
-  int payload[1];
-} *message;
-*/
+  CmiMessageHeader header;
+  int *payload;
+};
 
 void print_results() {
   printf("msg_size\n%d\n", CpvAccess(msg_size));
@@ -29,16 +28,16 @@ void ping_stop_handler(void *msg)
 }
 
 void send_msg() {
-  CmiMessage *msg = new CmiMessage;
+  Message *msg = new Message;
   msg->header.handlerId = CpvAccess(ping_index);
-  msg->header.messageSize = sizeof(CmiMessage);
+  msg->header.messageSize = sizeof(Message);
   msg->header.destPE = CmiMyRank() + CmiMyNodeSize() / 2;
   //payload
   int total_bytes = CpvAccess(msg_size) - msg->header.messageSize;
   printf("\ntotal int bytes = %d", total_bytes);
   int *ints_to_send = (int*)malloc(CpvAccess(msg_size) - msg->header.messageSize);
   for (int i = 0; i < (CpvAccess(msg_size) - msg->header.messageSize) / sizeof(int); ++i) ints_to_send[i] = i;
-  msg->data = (char*) ints_to_send; //will need to fix this for off-node messages
+  msg->payload = ints_to_send; //will need to fix this for off-node messages
   CmiSyncSendAndFree(msg->header.destPE, msg->header.messageSize, msg);
   /*
   struct myMsg *msg;
@@ -58,9 +57,9 @@ void send_msg() {
 
 void call_exit(){
   for(int i=0;i<CmiMyNodeSize();i++) {
-    CmiMessage *msg = new CmiMessage;
+    Message *msg = new Message;
     msg->header.handlerId = CpvAccess(stop_index);
-    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.messageSize = sizeof(Message);
     msg->header.destPE = i;
     CmiSyncSendAndFree(i, msg->header.messageSize, msg);
   }
@@ -69,13 +68,13 @@ void call_exit(){
 void ping_handler(void *vmsg)
 {
   int i;
-  //CmiMessage *msg = (CmiMessage*) vmsg;
-  int *incoming_data = (int*)vmsg;
+  Message *msg = (Message*) vmsg;
+  int *incoming_data = msg->payload;
   // if this is a receiving PE
   if (CmiMyRank() >= CmiMyNodeSize() / 2) {
     long sum = 0;
     long result = 0;
-    int num_ints = (CpvAccess(msg_size) - sizeof(CmiMessage)) / sizeof(int);
+    int num_ints = (CpvAccess(msg_size) - sizeof(Message)) / sizeof(int);
     printf("num_ints=%d\n",num_ints);
     double exp_avg = (num_ints - 1) / 2;
     for (i = 0; i < num_ints; ++i) {
@@ -94,9 +93,9 @@ void ping_handler(void *vmsg)
     //   CmiPrintf("Calculation OK\n"); // DEBUG: Computation Check
       
     CmiFree(vmsg);
-    CmiMessage *msg = new CmiMessage;
+    Message *msg = new Message;
     msg->header.handlerId = CpvAccess(ackmsg_index);
-    msg->header.messageSize = sizeof(CmiMessage);
+    msg->header.messageSize = sizeof(Message);
     msg->header.destPE = 0;
     /*
     msg = (message)CmiAlloc(CpvAccess(msg_size));
@@ -110,7 +109,7 @@ void ping_handler(void *vmsg)
 void pe0_ack_handler(void *vmsg)
 {
   int pe;
-  CmiMessage *msg = (CmiMessage*)vmsg;
+  Message *msg = (Message*)vmsg;
    //Pe-0 receives all acks
   CpvAccess(ack_count) = 1 + CpvAccess(ack_count);
 
@@ -153,7 +152,7 @@ void ping_moduleinit(int argc, char **argv)
   CpvAccess(ping_index) = CmiRegisterHandler(ping_handler);
   CpvAccess(ackmsg_index) = CmiRegisterHandler(pe0_ack_handler);
   CpvAccess(stop_index) = CmiRegisterHandler(ping_stop_handler);
-  CpvAccess(msg_size) = 16+sizeof(CmiMessage)+100;
+  CpvAccess(msg_size) = 16+sizeof(Message)+100;
 //  void CpmModuleInit(void);
 //  void CfutureModuleInit(void);
   //void CpthreadModuleInit(void);
