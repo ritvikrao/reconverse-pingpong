@@ -73,7 +73,8 @@ void CmiStartThreads()
 
 // argument form: ./prog +pe <N>
 // TODO: this function need error checking
-void ConverseInit(int argc, char **argv, CmiStartFn fn)
+// TODO: the input parsing, cmi_arg parsing is not done/robust
+void ConverseInit(int argc, char **argv, CmiStartFn fn, int usched, int initret)
 {
 
     Cmi_npes = atoi(argv[2]);
@@ -82,11 +83,11 @@ void ConverseInit(int argc, char **argv, CmiStartFn fn)
     // NOTE: calling CmiNumPes() here it sometimes returns zero
     printf("Charm++> Running in SMP mode: %d processes\n", Cmi_npes);
 
-    Cmi_argc = argc;
+    Cmi_argc = argc - 2; // TODO: Cmi_argc doesn't include runtime args?
     Cmi_argv = (char **)malloc(sizeof(char *) * (argc + 1));
     int i;
-    for (i = 0; i <= argc; i++)
-        Cmi_argv[i] = argv[i];
+    for (i = 2; i <= argc; i++)
+        Cmi_argv[i - 2] = argv[i];
     Cmi_startfn = fn;
 
     CmiStartThreads();
@@ -131,7 +132,7 @@ int CmiMyRank()
     return CmiGetState()->rank;
 }
 
-int CmiMyPE()
+int CmiMyPe()
 {
     return CmiMyRank(); // TODO: fix once in multi node context
 }
@@ -149,6 +150,11 @@ int CmiMyNode()
 int CmiMyNodeSize()
 {
     return Cmi_npes; // TODO: get node size (this is not the same)
+}
+
+int CmiNumPes()
+{
+    return Cmi_npes;
 }
 
 std::vector<CmiHandlerInfo> *CmiGetHandlerTable()
@@ -244,6 +250,13 @@ void CmiNodeBarrier(void)
     nodeBarrier.wait(); // TODO: this may be broken...
 }
 
+// TODO: in the original converse, this variant blocks comm thread as well. CmiNodeBarrier does not.
+void CmiNodeAllBarrier()
+{
+    static Barrier nodeBarrier(CmiMyNodeSize());
+    nodeBarrier.wait();
+}
+
 void CsdExitScheduler()
 {
     CmiGetState()->stopFlag = 1;
@@ -264,4 +277,54 @@ void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg)
     {
         // TODO: if off node
     }
+}
+
+void CmiSetHandler(void *msg, int handlerId)
+{
+    CmiMessageHeader *header = (CmiMessageHeader *)msg;
+    header->handlerId = handlerId;
+}
+
+// TODO: implement CmiPrintf
+int CmiPrintf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    // Call the actual printf function
+    vprintf(format, args);
+
+    va_end(args);
+    return 0;
+}
+
+// TODO: implement timer
+double CmiWallTimer()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return ts.tv_sec + ts.tv_nsec / 1e9;
+}
+
+int CmiGetArgc(char **argv)
+{
+    // TODO: is this supposed to be argc after runtime params are extracted?
+    return Cmi_argc;
+}
+
+// TODO: implement
+void CmiAbort(const char *format, ...)
+{
+    printf("CMI ABORT\n");
+    abort();
+}
+
+// TODO: implememt
+void CmiInitCPUTopology(char **argv)
+{
+}
+
+// TODO: implememt
+void CmiInitCPUAffinity(char **argv)
+{
 }

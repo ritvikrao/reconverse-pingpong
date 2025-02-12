@@ -14,7 +14,7 @@
 #define CpvInitialize(t, v)                            \
     do                                                 \
     {                                                  \
-        if (CmiMyPE())                                 \
+        if (CmiMyPe())                                 \
         {                                              \
             CmiNodeBarrier();                          \
         }                                              \
@@ -26,6 +26,6 @@
     } while (0)
 ;
 
-#define CpvAccess(v) CMK_TAG(Cpv_, v)[CmiMyPE()]
+#define CpvAccess(v) CMK_TAG(Cpv_, v)[CmiMyPe()]
 
 #endif

@@ -20,7 +20,7 @@ void CsdScheduler()
 
             // process event
             CmiMessageHeader *header = (CmiMessageHeader *)msg;
-            void *data = (void *)((char *)msg + CmiMessageHeaderSize);
+            void *data = (void *)((char *)msg + CmiMsgHeaderSizeBytes);
             int handler = header->handlerId;
 
             // call handler
@@ -36,7 +36,7 @@ void CsdScheduler()
 
             // process event
             CmiMessageHeader *header = (CmiMessageHeader *)msg;
-            void *data = (void *)((char *)msg + CmiMessageHeaderSize);
+            void *data = (void *)((char *)msg + CmiMsgHeaderSizeBytes);
             int handler = header->handlerId;
 
             // call handler

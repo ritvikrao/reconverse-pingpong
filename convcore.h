@@ -4,11 +4,6 @@
 #include "converse.h"
 #include "queue.h"
 
-typedef void (*CmiStartFn)(int argc, char **argv);
-void ConverseInit(int argc, char **argv, CmiStartFn fn);
-
-static CmiStartFn Cmi_startfn;
-
 typedef struct Header
 {
     int handlerId;
@@ -16,6 +11,8 @@ typedef struct Header
     int messageSize;
     int destPE;
 } CmiMessageHeader;
+
+#define CmiMsgHeaderSizeBytes sizeof(CmiMessageHeader)
 
 // typedef struct CmiMessageStruct
 // {
@@ -74,10 +71,12 @@ void CmiSyncBroadcastAndFree(int size, void *msg);
 void CmiSyncBroadcastAll(int size, void *msg);
 void CmiSyncBroadcastAllAndFree(int size, void *msg);
 
-void CmiNodeBarrier(void);
-
 // node queue
 ConverseQueue<void *> *CmiGetNodeQueue();
 void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg);
+
+int CmiPrintf(const char *format, ...);
+double CmiWallTimer(void);
+int CmiGetArgc(char **argv);
 
 #endif
