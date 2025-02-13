@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <cstring>
+#include <cstdarg>
 
 // GLOBALS
 int Cmi_argc;
