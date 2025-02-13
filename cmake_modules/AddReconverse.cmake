@@ -1,0 +1,8 @@
+function(add_reconverse_executable name)
+  add_executable(${name} ${ARGN})
+  target_link_libraries(${name} PRIVATE reconverse)
+  set_target_properties(${name} PROPERTIES CXX_STANDARD 11)
+  set_target_properties(${name} PROPERTIES LINKER_LANGUAGE CXX)
+  set_target_properties(${name} PROPERTIES OUTPUT_NAME "reconverse_${name}")
+  install(TARGETS ${name} RUNTIME)
+endfunction()

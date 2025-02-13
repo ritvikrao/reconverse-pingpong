@@ -1,0 +1,5 @@
+add_subdirectory(broadcast)
+add_subdirectory(orig-converse/pingpong)
+add_subdirectory(ping_ack)
+add_subdirectory(ring)
+add_subdirectory(startup)
