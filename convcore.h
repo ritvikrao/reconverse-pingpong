@@ -76,8 +76,6 @@ ConverseQueue<void *> *CmiGetNodeQueue();
 void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg);
 
 int CmiPrintf(const char *format, ...);
-double getCurrentTime(void);
-double CmiWallTimer(void);
 int CmiGetArgc(char **argv);
 
 #endif
