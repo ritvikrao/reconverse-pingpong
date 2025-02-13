@@ -1,0 +1,2 @@
+add_reconverse_executable(pingpong pingpong.C)
+add_reconverse_executable(pingpong_multipairs pingpong_multipairs.C)
