@@ -18,6 +18,7 @@ int Cmi_npes;
 int Cmi_nranks;                                // TODO: this isnt used in old converse, but we need to know how many PEs are on our node?
 std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
 ConverseQueue<void *> *CmiNodeQueue;
+double Cmi_startTime;
 
 // PE LOCALS that need global access sometimes
 static ConverseQueue<void *> **Cmi_queues; // array of queue pointers
@@ -78,6 +79,8 @@ void CmiStartThreads()
 void ConverseInit(int argc, char **argv, CmiStartFn fn, int usched, int initret)
 {
 
+    Cmi_startTime = getCurrentTime();
+    
     Cmi_npes = atoi(argv[2]);
     // int plusPSet = CmiGetArgInt(argv,"+pe",&Cmi_npes);
 
@@ -121,6 +124,8 @@ void CmiInitState(int rank)
 
     Cmi_queues[Cmi_myrank] = queue;
     CmiHandlerTable[Cmi_myrank] = handlerTable;
+
+    CcdModuleInit();
 }
 
 ConverseQueue<void *> *CmiGetQueue(int rank)
@@ -299,12 +304,17 @@ int CmiPrintf(const char *format, ...)
     return 0;
 }
 
-// TODO: implement timer
-double CmiWallTimer()
+double getCurrentTime()
 {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     return ts.tv_sec + ts.tv_nsec / 1e9;
+}
+
+// TODO: implement timer
+double CmiWallTimer()
+{
+    return getCurrentTime() - Cmi_startTime;
 }
 
 int CmiGetArgc(char **argv)

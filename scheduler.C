@@ -43,6 +43,8 @@ void CsdScheduler()
             CmiCallHandler(handler, msg);
         }
 
+        CcdCallBacks();
+
         // TODO: suspend? or spin?
     }
 }
