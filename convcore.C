@@ -17,8 +17,10 @@ static char **Cmi_argv;
 int Cmi_npes;
 int Cmi_nranks;                                // TODO: this isnt used in old converse, but we need to know how many PEs are on our node?
 std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
-ConverseQueue<void *> *CmiNodeQueue;
+ConverseNodeQueue<void *> *CmiNodeQueue;
 double Cmi_startTime;
+std::mutex nodeQueueMutex;
+
 
 // PE LOCALS that need global access sometimes
 static ConverseQueue<void *> **Cmi_queues; // array of queue pointers
@@ -120,7 +122,7 @@ void CmiInitState(int rank)
     ConverseQueue<void *> *queue = new ConverseQueue<void *>();
     std::vector<CmiHandlerInfo> *handlerTable = new std::vector<CmiHandlerInfo>();
 
-    CmiNodeQueue = new ConverseQueue<void *>();
+    CmiNodeQueue = new ConverseNodeQueue<void *>();
 
     Cmi_queues[Cmi_myrank] = queue;
     CmiHandlerTable[Cmi_myrank] = handlerTable;
@@ -268,7 +270,7 @@ void CsdExitScheduler()
     CmiGetState()->stopFlag = 1;
 }
 
-ConverseQueue<void *> *CmiGetNodeQueue()
+ConverseNodeQueue<void *> *CmiGetNodeQueue()
 {
     return CmiNodeQueue;
 }
@@ -338,4 +340,14 @@ void CmiInitCPUTopology(char **argv)
 // TODO: implememt
 void CmiInitCPUAffinity(char **argv)
 {
+}
+
+void CmiAcquireNodeQueueLock()
+{
+    nodeQueueMutex.lock();
+}
+
+void CmiReleaseNodeQueueLock()
+{
+    nodeQueueMutex.unlock();
 }

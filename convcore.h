@@ -72,8 +72,10 @@ void CmiSyncBroadcastAll(int size, void *msg);
 void CmiSyncBroadcastAllAndFree(int size, void *msg);
 
 // node queue
-ConverseQueue<void *> *CmiGetNodeQueue();
+ConverseNodeQueue<void *> *CmiGetNodeQueue();
 void CmiSyncNodeSendAndFree(unsigned int destNode, unsigned int size, void *msg);
+void CmiAcquireNodeQueueLock();
+void CmiReleaseNodeQueueLock();
 
 int CmiPrintf(const char *format, ...);
 int CmiGetArgc(char **argv);

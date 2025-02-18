@@ -8,24 +8,32 @@ void CsdScheduler()
     // get pthread level queue
 
     ConverseQueue<void *> *queue = CmiGetQueue(CmiMyRank());
-    ConverseQueue<void *> *nodeQueue = CmiGetNodeQueue();
+    ConverseNodeQueue<void *> *nodeQueue = CmiGetNodeQueue();
 
     while (CmiStopFlag() == 0)
     {
+        
+        CcdRaiseCondition(CcdSCHEDLOOP);
+
         // poll node queue
         if (!nodeQueue->empty())
         {
             // get next event (guaranteed to be there because only single consumer)
-            void *msg = nodeQueue->pop();
+            CmiAcquireNodeQueueLock();
+            if (!nodeQueue->empty())
+            {
+                void *msg = nodeQueue->pop();
 
-            // process event
-            CmiMessageHeader *header = (CmiMessageHeader *)msg;
-            void *data = (void *)((char *)msg + CmiMsgHeaderSizeBytes);
-            int handler = header->handlerId;
+                // process event
+                CmiMessageHeader *header = (CmiMessageHeader *)msg;
+                void *data = (void *)((char *)msg + CmiMsgHeaderSizeBytes);
+                int handler = header->handlerId;
 
-            // call handler
-            CmiCallHandler(handler, data);
-            continue;
+                // call handler
+                CmiCallHandler(handler, data);
+
+            }
+            CmiReleaseNodeQueueLock();
         }
 
         // poll thread queue
