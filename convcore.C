@@ -118,6 +118,8 @@ void CmiInitState(int rank)
     Cmi_state->stopFlag = 0;
 
     Cmi_myrank = rank;
+    CmiSetIdle(false);
+    CmiSetIdleTime(0.0);
 
     // allocate global entries
     ConverseQueue<void *> *queue = new ConverseQueue<void *>();
