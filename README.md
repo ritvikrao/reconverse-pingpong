@@ -11,4 +11,4 @@ $ cmake ..
 $ make
 ```
 
-In the examples/<program_name> folder, run the `reconverse_<program_name>` executable.
+In the build/examples/<program_name> folder, run the `reconverse_<program_name>` executable.
