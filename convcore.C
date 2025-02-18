@@ -19,7 +19,6 @@ int Cmi_nranks;                                // TODO: this isnt used in old co
 std::vector<CmiHandlerInfo> **CmiHandlerTable; // array of handler vectors
 ConverseNodeQueue<void *> *CmiNodeQueue;
 double Cmi_startTime;
-std::mutex nodeQueueMutex;
 
 
 // PE LOCALS that need global access sometimes
@@ -28,6 +27,8 @@ static ConverseQueue<void *> **Cmi_queues; // array of queue pointers
 // PE LOCALS
 thread_local int Cmi_myrank;
 thread_local CmiState *Cmi_state;
+thread_local bool idle_condition;
+thread_local double idle_time;
 
 // TODO: padding for all these thread_locals and cmistates?
 
@@ -342,12 +343,23 @@ void CmiInitCPUAffinity(char **argv)
 {
 }
 
-void CmiAcquireNodeQueueLock()
+bool CmiGetIdle()
 {
-    nodeQueueMutex.lock();
+    return idle_condition;
 }
 
-void CmiReleaseNodeQueueLock()
+void CmiSetIdle(bool idle)
 {
-    nodeQueueMutex.unlock();
+    idle_condition = idle;
+}
+
+
+double CmiGetIdleTime()
+{
+    return idle_time;
+}
+
+void CmiSetIdleTime(double time)
+{
+    idle_time = time;
 }

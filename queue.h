@@ -13,6 +13,14 @@ public:
     static void release();
 };
 
+class QueueResult{
+    public:
+    void *msg;
+    operator bool(){
+        return msg != NULL;
+    }
+};
+
 // An MPSC queue that can be used to send messages between threads.
 template <typename ConcreteQ, typename MessageType, typename AccessControlPolicy>
 class MPSCQueue
@@ -70,22 +78,25 @@ class MPMCQueue
 public:
 
 
-    MessageType pop()
+    QueueResult pop()
     {
         AccessControlPolicy::acquire();
         // This will not work for atomics.
         // It's fine for now: internal implementation detail.
 
+        QueueResult result;
         if (q.size() == 0)
         {
-            // TODO: throw something?
-            throw std::runtime_error("Cannot pop from empty queue is empty");
+            result.msg = NULL;
+        }
+        else
+        { 
+            result.msg = q.front();
+            q.pop();
         }
 
-        MessageType message = q.front();
-        q.pop();
         AccessControlPolicy::release();
-        return message;
+        return result;
     }
 
     void push(MessageType message)
