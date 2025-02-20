@@ -18,12 +18,10 @@ void CsdScheduler()
         // poll node queue
         if (!nodeQueue->empty())
         {
-            // get next event (guaranteed to be there because only single consumer)
-            CmiAcquireNodeQueueLock();
-            if (!nodeQueue->empty())
+            QueueResult result = nodeQueue->pop();
+            if(result)
             {
-                void *msg = nodeQueue->pop();
-
+                void *msg = result.msg;
                 // process event
                 CmiMessageHeader *header = (CmiMessageHeader *)msg;
                 void *data = (void *)((char *)msg + CmiMsgHeaderSizeBytes);
@@ -32,8 +30,13 @@ void CsdScheduler()
                 // call handler
                 CmiCallHandler(handler, data);
 
+                //release idle if necessary
+                if(CmiGetIdle())
+                {
+                    CmiSetIdle(false);
+                    CcdRaiseCondition(CcdPROCESSOR_END_IDLE);
+                }
             }
-            CmiReleaseNodeQueueLock();
         }
 
         // poll thread queue
@@ -49,6 +52,34 @@ void CsdScheduler()
 
             // call handler
             CmiCallHandler(handler, msg);
+
+            //release idle if necessary
+            if(CmiGetIdle())
+            {
+                CmiSetIdle(false);
+                CcdRaiseCondition(CcdPROCESSOR_END_IDLE);
+            }
+        }
+
+        //the processor is idle
+        else
+        {
+            // if not already idle, set idle and raise condition
+            if(!CmiGetIdle())
+            {
+                CmiSetIdle(true);
+                CmiSetIdleTime(CmiWallTimer());
+                CcdRaiseCondition(CcdPROCESSOR_BEGIN_IDLE);
+            }
+            // if already idle, call still idle and (maybe) long idle
+            else
+            {
+                CcdRaiseCondition(CcdPROCESSOR_STILL_IDLE);
+                if(CmiWallTimer() - CmiGetIdleTime() > 10.0)
+                {
+                    CcdRaiseCondition(CcdPROCESSOR_LONG_IDLE);
+                }
+            }
         }
 
         CcdCallBacks();
