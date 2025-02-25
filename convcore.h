@@ -2,6 +2,8 @@
 #define CONVCORE_H
 
 #include "converse.h"
+#include "converse_config.h"
+#include "comm_backend/comm_backend.h"
 #include "queue.h"
 
 typedef struct Header
