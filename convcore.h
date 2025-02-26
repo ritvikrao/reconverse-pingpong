@@ -23,7 +23,7 @@ typedef struct Header
 // } CmiMessage;
 
 void CmiStartThreads(char **argv);
-void *converseRunPe(void *arg);
+void converseRunPe(int rank);
 
 // HANDLERS
 // TODO: what is CmiHandlerEx in old converse?

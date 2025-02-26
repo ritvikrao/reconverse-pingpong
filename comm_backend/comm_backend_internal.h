@@ -12,10 +12,12 @@ namespace comm_backend {
 class CommBackendBase 
 {
  public:
-  virtual void init(int *argc, char ***argv, int *numNodes, int *myNodeID) = 0;
+  virtual void init(int *argc, char ***argv) = 0;
   virtual void exit() = 0;
+  virtual int getMyNodeId() = 0;
+  virtual int getNumNodes() = 0;
   virtual AmHandler registerAmHandler(CompHandler handler) = 0;
-  virtual void sendAm(int rank, char *msg, size_t size, CompHandler localComp, AmHandler remoteComp) = 0;
+  virtual void sendAm(int rank, void *msg, size_t size, CompHandler localComp, AmHandler remoteComp) = 0;
   // return true if there is more work to do
   virtual bool progress(void) = 0;
   virtual void barrier(void) = 0;

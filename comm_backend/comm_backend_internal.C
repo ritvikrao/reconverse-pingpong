@@ -2,66 +2,77 @@
 
 namespace comm_backend {
 
-CommBackendBase *commBackend = nullptr;
+CommBackendBase *gCommBackend = nullptr;
+int gNumNodes = 1;
+int gMyNodeID = 0;
 
-void init(int *argc, char ***argv, int *numNodes, int *myNodeID) 
+void init(int *argc, char ***argv) 
 {
 #ifdef RECONVERSE_ENABLE_COMM_LCI1
-  commBackend = new CommBackendLCI1();
+  gCommBackend = new CommBackendLCI1();
 #endif
-  if (commBackend == nullptr) {
-    *numNodes = 1;
-    *myNodeID = 0;
+  if (gCommBackend == nullptr) {
     return;
   }
   
-  commBackend->init(argc, argv, numNodes, myNodeID);
+  gCommBackend->init(argc, argv);
+  gMyNodeID = gCommBackend->getMyNodeId();
+  gNumNodes = gCommBackend->getNumNodes();
 }
 
 void exit()
 {
-  if (commBackend == nullptr) {
-    fprintf(stderr, "Error: commBackend is null\n");
-    return;
+  if (gCommBackend) {
+    gCommBackend->exit();
+    delete gCommBackend;
+    gCommBackend = nullptr;
   }
-  commBackend->exit();
-  delete commBackend;
 }
 
-AmHandler registerAmHandlerr(CompHandler handler)
+int getMyNodeId()
 {
-  if (commBackend == nullptr) {
+  return gMyNodeID;
+}
+
+int getNumNodes()
+{
+  return gNumNodes;
+}
+
+AmHandler registerAmHandler(CompHandler handler)
+{
+  if (gCommBackend == nullptr) {
     fprintf(stderr, "Error: commBackend is null\n");
     return -1;
   }
-  return commBackend->registerAmHandler(handler);
+  return gCommBackend->registerAmHandler(handler);
 }
 
-void sendAm(int rank, char *msg, size_t size, CompHandler localComp, AmHandler remoteComp)
+void sendAm(int rank, void* msg, size_t size, CompHandler localComp, AmHandler remoteComp)
 {
-  if (commBackend == nullptr) {
+  if (gCommBackend == nullptr) {
     fprintf(stderr, "Error: commBackend is null\n");
     return;
   }
-  commBackend->sendAm(rank, msg, size, localComp, remoteComp);
+  gCommBackend->sendAm(rank, msg, size, localComp, remoteComp);
 }
 
 bool progress(void)
 {
-  if (commBackend == nullptr) {
+  if (gCommBackend == nullptr) {
     fprintf(stderr, "Error: commBackend is null\n");
     return false;
   }
-  return commBackend->progress();
+  return gCommBackend->progress();
 }
 
 void barrier(void)
 {
-  if (commBackend == nullptr) {
+  if (gCommBackend == nullptr) {
     fprintf(stderr, "Error: commBackend is null\n");
     return;
   }
-  commBackend->barrier();
+  gCommBackend->barrier();
 }
 
 } // namespace comm_backend
